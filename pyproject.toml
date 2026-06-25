@@ -1,0 +1,32 @@
+[project]
+name = "word-document-master-tool"
+version = "0.1.0"
+description = "Python desktop tool for batch Word document processing and PDF export"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "pywin32>=306; platform_system == 'Windows'",
+    "pypdf>=5.0.0",
+]
+
+[project.scripts]
+wdmt = "word_document_master_tool.cli:main"
+wdmt-gui = "word_document_master_tool.gui.app:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
