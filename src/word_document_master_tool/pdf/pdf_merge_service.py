@@ -1,5 +1,6 @@
 import logging
 import os
+from dataclasses import dataclass, field
 
 from pypdf import PdfWriter
 
@@ -7,20 +8,34 @@ from ..core.models import DocumentItem, ToolSettings
 from ..filesystem.paths import build_safe_file_name, ensure_unique_file_path
 
 
+@dataclass
+class PdfMergeResult:
+    """
+    Результат операции слияния PDF.
+    """
+    success: bool
+    output_path: str = ""
+    merged_count: int = 0
+    skipped_paths: list[str] = field(default_factory=list)
+    error_message: str = ""
+
+
 class PdfMergeService:
     def __init__(self, settings: ToolSettings):
         self.settings = settings
 
-    def merge_pdfs(self, items: list[DocumentItem]) -> str:
+    def merge_pdfs(self, items: list[DocumentItem]) -> PdfMergeResult:
         """
         Объединяет сгенерированные PDF файлы в один.
-        Сохраняет порядок согласно списку.
         """
-        pdf_paths = [item.pdf_path for item in items if item.is_selected and item.pdf_path]
+        selected_items = [item for item in items if item.is_selected]
+        pdf_paths = [item.pdf_path for item in selected_items if item.pdf_path]
         
         if not pdf_paths:
-            logging.warning("No PDFs to merge.")
-            return ""
+            return PdfMergeResult(
+                success=False, 
+                error_message="Нет PDF-файлов для объединения."
+            )
 
         output_folder = self.settings.pdf.output_folder or self.settings.output_folder
         if not os.path.exists(output_folder):
@@ -32,22 +47,37 @@ class PdfMergeService:
         output_path = ensure_unique_file_path(output_path)
 
         writer = PdfWriter()
+        merged_count = 0
+        skipped_paths = []
 
         try:
             for path in pdf_paths:
                 if os.path.exists(path):
                     writer.append(path)
+                    merged_count += 1
                 else:
+                    skipped_paths.append(path)
                     logging.error(f"PDF file not found for merging: {path}")
+
+            if merged_count == 0:
+                return PdfMergeResult(
+                    success=False, 
+                    error_message="Ни один из PDF-файлов не найден на диске."
+                )
 
             with open(output_path, "wb") as f:
                 writer.write(f)
 
             logging.info(f"PDFs merged successfully into: {output_path}")
-            return output_path
+            return PdfMergeResult(
+                success=True,
+                output_path=output_path,
+                merged_count=merged_count,
+                skipped_paths=skipped_paths
+            )
 
         except Exception as e:
             logging.error(f"Error merging PDFs: {e}")
-            return ""
+            return PdfMergeResult(success=False, error_message=str(e))
         finally:
             writer.close()
