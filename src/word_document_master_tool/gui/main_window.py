@@ -6,6 +6,7 @@ class MainWindow(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
+        self.document_items = []
         self._create_widgets()
 
     def _create_widgets(self):
@@ -202,9 +203,43 @@ class MainWindow(ttk.Frame):
         ttk.Button(frame, text="Обработать файлы").pack(side="right", padx=5)
         ttk.Button(frame, text="Слияние документов").pack(side="right", padx=5)
 
-    def _refresh_list(self):
-        # Будет реализовано при связке с логикой
-        pass
+    def _refresh_list(self) -> None:
+        from tkinter import messagebox
+        from ..filesystem.discovery import find_word_documents
+
+        source_folder = self.ent_source_folder.get().strip()
+
+        if not source_folder:
+            messagebox.showwarning("Исходная папка", "Укажите исходную папку.")
+            return
+
+        try:
+            items = find_word_documents(source_folder)
+        except Exception as exc:
+            messagebox.showerror("Ошибка", f"Не удалось прочитать папку:\n{exc}")
+            return
+
+        self.document_items = items
+
+        for row_id in self.tree.get_children():
+            self.tree.delete(row_id)
+
+        for item in items:
+            self.tree.insert(
+                "",
+                "end",
+                values=(
+                    "Да" if item.is_selected else "Нет",
+                    item.file_name,
+                    item.extension,
+                    item.size_bytes,
+                    item.modified_at.strftime("%Y-%m-%d %H:%M"),
+                    item.status.value if hasattr(item.status, "value") else str(item.status),
+                ),
+            )
+
+        self._update_counters()
+        self.lbl_status.config(text=f"Найдено документов: {len(items)}")
 
     def _move_up(self):
         selected = self.tree.selection()
