@@ -151,13 +151,12 @@ class ToolSettings:
 
         # Footnotes
         if self.footnotes.enabled:
-            modes = [
-                self.footnotes.restart_each_document,
-                self.footnotes.restart_each_section,
-                self.footnotes.continuous
-            ]
-            if sum(1 for m in modes if m) > 1:
-                errors.append("Выберите только один режим нумерации сносок.")
+            if self.footnotes.continuous and (
+                self.footnotes.restart_each_document or self.footnotes.restart_each_section
+            ):
+                errors.append(
+                    "Сквозная нумерация сносок и сброс в каждом документе/секции взаимоисключаемы."
+                )
             if self.footnotes.start_number < 1:
                 errors.append("Начальный номер сносок должен быть >= 1.")
 

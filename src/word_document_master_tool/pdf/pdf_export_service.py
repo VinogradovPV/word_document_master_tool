@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 
@@ -59,7 +60,5 @@ class PdfExportService:
 
         finally:
             if doc is not None:
-                try:
+                with contextlib.suppress(Exception):
                     doc.Close(SaveChanges=WD_DO_NOT_SAVE_CHANGES)
-                except Exception:
-                    pass

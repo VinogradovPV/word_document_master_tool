@@ -28,6 +28,8 @@ def test_merge_pdfs(tmp_path):
         DocumentItem(2, "2.docx", "2.docx", "docx", 0, None, pdf_path=str(pdf2)),
     ]
     
-    result_path = service.merge_pdfs(items)
-    assert os.path.exists(result_path)
-    assert "test_combined.pdf" in result_path
+    result = service.merge_pdfs(items)
+    assert result.success
+    assert os.path.exists(result.output_path)
+    assert "test_combined.pdf" in result.output_path
+    assert result.merged_count == 2

@@ -1,11 +1,12 @@
-import os
+import contextlib
 import logging
+import os
 import platform
 
 try:
     if platform.system() == "Windows":
-        import win32com.client
         import pythoncom
+        import win32com.client
     else:
         win32com = None
         pythoncom = None
@@ -71,17 +72,13 @@ class WordApp:
                 logging.error(f"Error during Word cleanup: {e}")
             finally:
                 if self._owns_app:
-                    try:
+                    with contextlib.suppress(Exception):
                         self.app.Quit()
-                    except Exception:
-                        pass
                 self.app = None
         
         if pythoncom is not None:
-            try:
+            with contextlib.suppress(Exception):
                 pythoncom.CoUninitialize()
-            except Exception:
-                pass
 
     def open_document(self, file_path: str, read_only: bool = True):
         """

@@ -205,6 +205,7 @@ class MainWindow(ttk.Frame):
 
     def _refresh_list(self) -> None:
         from tkinter import messagebox
+
         from ..filesystem.discovery import find_word_documents
 
         source_folder = self.ent_source_folder.get().strip()
