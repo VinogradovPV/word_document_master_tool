@@ -1,16 +1,19 @@
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
+
+from .state import GuiState
 
 
 class MainWindow(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
-        self.document_items = []
+        self.state = GuiState()
         self._create_widgets()
 
     def _create_widgets(self):
-        # Главный контейнер со скроллбаром, если нужно
+        # Главный контейнер со скроллбаром
         main_canvas = tk.Canvas(self)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=main_canvas.yview)
         self.scrollable_frame = ttk.Frame(main_canvas)
@@ -108,6 +111,8 @@ class MainWindow(ttk.Frame):
         ttk.Button(btn_frame, text="Включить все", command=self._select_all).pack(fill="x", pady=2)
         ttk.Button(btn_frame, text="Выключить все", command=self._clear_all).pack(fill="x", pady=2)
         ttk.Button(btn_frame, text="Обновить", command=self._refresh_list).pack(fill="x", pady=5)
+
+        self.tree.bind("<Double-1>", self._on_double_click)
 
     def _create_merge_settings_frame(self, parent):
         frame = ttk.LabelFrame(parent, text="Настройки слияния")
@@ -214,18 +219,27 @@ class MainWindow(ttk.Frame):
             messagebox.showwarning("Исходная папка", "Укажите исходную папку.")
             return
 
+        path = Path(source_folder)
+        if not path.exists() or not path.is_dir():
+            messagebox.showerror("Ошибка", "Указанный путь не существует или не является папкой.")
+            return
+
         try:
             items = find_word_documents(source_folder)
         except Exception as exc:
             messagebox.showerror("Ошибка", f"Не удалось прочитать папку:\n{exc}")
             return
 
-        self.document_items = items
+        self.state.documents = items
+        self._sync_tree()
+        self.lbl_status.config(text=f"Найдено документов: {len(items)}")
 
+    def _sync_tree(self):
+        """Синхронизирует Treeview с состоянием документов."""
         for row_id in self.tree.get_children():
             self.tree.delete(row_id)
 
-        for item in items:
+        for item in self.state.documents:
             self.tree.insert(
                 "",
                 "end",
@@ -238,42 +252,60 @@ class MainWindow(ttk.Frame):
                     item.status.value if hasattr(item.status, "value") else str(item.status),
                 ),
             )
-
         self._update_counters()
-        self.lbl_status.config(text=f"Найдено документов: {len(items)}")
+
+    def _on_double_click(self, event):
+        item_id = self.tree.identify_row(event.y)
+        column = self.tree.identify_column(event.x)
+        if item_id and column == "#1":  # Колонка "Вкл"
+            index = self.tree.index(item_id)
+            doc = self.state.documents[index]
+            doc.is_selected = not doc.is_selected
+            self._sync_tree()
+
+    def _select_all(self):
+        for doc in self.state.documents:
+            doc.is_selected = True
+        self._sync_tree()
+
+    def _clear_all(self):
+        for doc in self.state.documents:
+            doc.is_selected = False
+        self._sync_tree()
 
     def _move_up(self):
         selected = self.tree.selection()
-        for item in selected:
-            index = self.tree.index(item)
-            if index > 0:
-                self.tree.move(item, self.tree.parent(item), index - 1)
+        if not selected:
+            return
+        
+        # Получаем индексы всех выбранных элементов
+        indices = sorted([self.tree.index(s) for s in selected])
+        
+        for idx in indices:
+            if idx > 0:
+                # Меняем местами в списке
+                self.state.documents[idx], self.state.documents[idx-1] = \
+                    self.state.documents[idx-1], self.state.documents[idx]
+        
+        self._sync_tree()
+        # Восстанавливаем выделение (опционально, но полезно)
 
     def _move_down(self):
         selected = self.tree.selection()
-        for item in reversed(selected):
-            index = self.tree.index(item)
-            self.tree.move(item, self.tree.parent(item), index + 1)
-
-    def _select_all(self):
-        for item in self.tree.get_children():
-            values = list(self.tree.item(item, "values"))
-            values[0] = "Да"
-            self.tree.item(item, values=values)
-        self._update_counters()
-
-    def _clear_all(self):
-        for item in self.tree.get_children():
-            values = list(self.tree.item(item, "values"))
-            values[0] = "Нет"
-            self.tree.item(item, values=values)
-        self._update_counters()
+        if not selected:
+            return
+        
+        # Получаем индексы в обратном порядке
+        indices = sorted([self.tree.index(s) for s in selected], reverse=True)
+        
+        for idx in indices:
+            if idx < len(self.state.documents) - 1:
+                self.state.documents[idx], self.state.documents[idx+1] = \
+                    self.state.documents[idx+1], self.state.documents[idx]
+        
+        self._sync_tree()
 
     def _update_counters(self):
-        total = len(self.tree.get_children())
-        selected = sum(
-            1
-            for item in self.tree.get_children()
-            if self.tree.item(item, "values")[0] == "Да"
-        )
+        total = len(self.state.documents)
+        selected = sum(1 for d in self.state.documents if d.is_selected)
         self.lbl_counts.config(text=f"Найдено: {total} | Выбрано: {selected}")
