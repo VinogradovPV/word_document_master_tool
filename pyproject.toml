@@ -30,3 +30,7 @@ ignore = []
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "windows_word: requires Windows and Microsoft Word COM automation",
+    "gui: Tkinter GUI tests",
+]
