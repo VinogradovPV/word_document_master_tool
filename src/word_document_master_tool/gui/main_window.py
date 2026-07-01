@@ -64,12 +64,12 @@ class MainWindow(ttk.Frame):
         ttk.Label(frame, text="Исходная папка:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
         self.ent_source_folder = ttk.Entry(frame)
         self.ent_source_folder.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(frame, text="Обзор...").grid(row=0, column=2, padx=5, pady=2)
+        ttk.Button(frame, text="Обзор...", command=lambda: self._browse_folder(self.ent_source_folder)).grid(row=0, column=2, padx=5, pady=2)
 
         ttk.Label(frame, text="Папка результата:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
         self.ent_output_folder = ttk.Entry(frame)
         self.ent_output_folder.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(frame, text="Обзор...").grid(row=1, column=2, padx=5, pady=2)
+        ttk.Button(frame, text="Обзор...", command=lambda: self._browse_folder(self.ent_output_folder)).grid(row=1, column=2, padx=5, pady=2)
 
         ttk.Label(frame, text="Имя файла:").grid(row=2, column=0, sticky="w", padx=5, pady=2)
         self.ent_output_filename = ttk.Entry(frame)
@@ -172,7 +172,7 @@ class MainWindow(ttk.Frame):
         ttk.Label(frame, text="Папка PDF:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
         self.ent_pdf_folder = ttk.Entry(frame)
         self.ent_pdf_folder.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(frame, text="Обзор...").grid(row=1, column=2, padx=5, pady=2)
+        ttk.Button(frame, text="Обзор...", command=lambda: self._browse_folder(self.ent_pdf_folder)).grid(row=1, column=2, padx=5, pady=2)
 
         frame.columnconfigure(1, weight=1)
 
@@ -207,6 +207,13 @@ class MainWindow(ttk.Frame):
 
         ttk.Button(frame, text="Обработать файлы").pack(side="right", padx=5)
         ttk.Button(frame, text="Слияние документов").pack(side="right", padx=5)
+
+    def _browse_folder(self, entry: ttk.Entry) -> None:
+        from tkinter import filedialog
+        directory = filedialog.askdirectory()
+        if directory:
+            entry.delete(0, tk.END)
+            entry.insert(0, directory)
 
     def _refresh_list(self) -> None:
         from tkinter import messagebox
