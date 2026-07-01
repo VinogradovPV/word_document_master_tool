@@ -33,8 +33,8 @@ class PdfMergeService:
         
         if not pdf_paths:
             return PdfMergeResult(
-                success=False, 
-                error_message="Нет PDF-файлов для объединения."
+                success=False,
+                error_message="Нет PDF для объединения"
             )
 
         output_folder = self.settings.pdf.output_folder or self.settings.output_folder
