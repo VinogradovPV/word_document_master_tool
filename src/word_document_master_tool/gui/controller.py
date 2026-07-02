@@ -2,11 +2,13 @@ import logging
 import threading
 from collections.abc import Callable
 
-from ..core.models import DocumentStatus, ToolSettings
+from ..core.logging_service import ProcessingLogger, setup_application_logging
+from ..core.models import ToolSettings
 from ..pdf.pdf_export_service import PdfExportService
 from ..pdf.pdf_merge_service import PdfMergeService
 from ..word.merge_service import WordMergeService
 from ..word.source_processing_service import SourceProcessingService
+from ..word.split_service import WordSplitService
 from ..word.word_app import WordApp
 from .state import GuiState
 
@@ -45,30 +47,15 @@ class AppController:
         if not selected_items:
             return
 
-        with WordApp() as word:
-            source_service = SourceProcessingService(word, settings)
-            pdf_service = PdfExportService(word, settings)
-            
-            total = len(selected_items)
-            for i, item in enumerate(selected_items):
-                progress_callback(i, total)
-                item.status = DocumentStatus.PROCESSING
-                
-                try:
-                    # 1. Подготовка копии
-                    processed_path = source_service.prepare_processed_copy(item.file_path)
-                    
-                    # 2. Экспорт в PDF (если нужно)
-                    if settings.pdf.export_sources:
-                        pdf_path = pdf_service.export_source_as_readonly(item.file_path)
-                        item.pdf_path = pdf_path
-                    
-                    item.status = DocumentStatus.OK
-                except Exception as e:
-                    logging.error(f"Failed to process {item.file_name}: {e}")
-                    item.status = DocumentStatus.ERROR
-            
-            progress_callback(total, total)
+        setup_application_logging(settings.output_folder)
+        logger = ProcessingLogger(settings.output_folder)
+        source_service = SourceProcessingService(settings)
+        
+        total = len(selected_items)
+        # Внутри process_copies уже используется WordApp
+        source_service.process_copies(selected_items, log_service=logger)
+        
+        progress_callback(total, total)
 
     def merge_documents(self, settings: ToolSettings, progress_callback: Callable[[int, int], None]):
         """Слияние выбранных документов."""
@@ -76,6 +63,7 @@ class AppController:
         if not selected_items:
             return
 
+        setup_application_logging(settings.output_folder)
         with WordApp() as word:
             merge_service = WordMergeService(word, settings)
             pdf_service = PdfExportService(word, settings)
@@ -96,5 +84,19 @@ class AppController:
                     
             except Exception as e:
                 logging.error(f"Merge failed: {e}")
+            finally:
+                progress_callback(100, 100)
+
+    def split_documents(self, settings: ToolSettings, progress_callback: Callable[[int, int], None]):
+        """Разделение документа по маркерам."""
+        setup_application_logging(settings.output_folder)
+        with WordApp() as word:
+            split_service = WordSplitService(word, settings)
+            progress_callback(0, 100)
+            try:
+                # Разделяем файл по маркерам
+                split_service.split_by_markers(settings.output_folder)
+            except Exception as e:
+                logging.error(f"Split failed: {e}")
             finally:
                 progress_callback(100, 100)

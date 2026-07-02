@@ -186,7 +186,8 @@ class MainWindow(ttk.Frame):
         self.chk_use_markers = ttk.Checkbutton(frame, text="Использовать маркеры")
         self.chk_use_markers.grid(row=0, column=0, sticky="w", padx=5, pady=2)
 
-        ttk.Button(frame, text="Разделить по маркерам").grid(row=0, column=1, padx=5, pady=2)
+        self.btn_split = ttk.Button(frame, text="Разделить по маркерам", command=self._on_split_documents)
+        self.btn_split.grid(row=0, column=1, sticky="e", padx=5, pady=2)
 
     def _create_footnotes_frame(self, parent):
         frame = ttk.LabelFrame(parent, text="Сноски")
@@ -357,6 +358,14 @@ class MainWindow(ttk.Frame):
         self.controller.run_in_thread(
             lambda: self.controller.merge_documents(settings, self._update_progress),
             lambda: self.master.after(0, lambda: self.btn_merge.config(state="normal"))
+        )
+
+    def _on_split_documents(self):
+        settings = self._get_current_settings()
+        self.btn_split.config(state="disabled")
+        self.controller.run_in_thread(
+            lambda: self.controller.split_documents(settings, self._update_progress),
+            lambda: self.master.after(0, lambda: self.btn_split.config(state="normal"))
         )
 
     def _update_progress(self, current: int, total: int):
