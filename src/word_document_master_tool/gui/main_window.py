@@ -2,6 +2,8 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
 
+from ..core.models import ToolSettings
+from .controller import AppController
 from .state import GuiState
 
 
@@ -10,6 +12,7 @@ class MainWindow(ttk.Frame):
         super().__init__(master)
         self.master = master
         self.state = GuiState()
+        self.controller = AppController(self.state)
         self._create_widgets()
 
     def _create_widgets(self):
@@ -205,8 +208,10 @@ class MainWindow(ttk.Frame):
         self.progress = ttk.Progressbar(frame, orient="horizontal", mode="determinate")
         self.progress.pack(side="left", fill="x", expand=True, padx=5)
 
-        ttk.Button(frame, text="Обработать файлы").pack(side="right", padx=5)
-        ttk.Button(frame, text="Слияние документов").pack(side="right", padx=5)
+        self.btn_process = ttk.Button(frame, text="Обработать файлы", command=self._on_process_files)
+        self.btn_process.pack(side="right", padx=5)
+        self.btn_merge = ttk.Button(frame, text="Слияние документов", command=self._on_merge_documents)
+        self.btn_merge.pack(side="right", padx=5)
 
     def _browse_folder(self, entry: ttk.Entry) -> None:
         from tkinter import filedialog
@@ -316,3 +321,49 @@ class MainWindow(ttk.Frame):
         total = len(self.state.documents)
         selected = sum(1 for d in self.state.documents if d.is_selected)
         self.lbl_counts.config(text=f"Найдено: {total} | Выбрано: {selected}")
+
+    def _get_current_settings(self) -> ToolSettings:
+        """Собирает текущие настройки из GUI в объект ToolSettings."""
+        settings = ToolSettings(
+            output_folder=self.ent_output_folder.get().strip(),
+            output_file_name=self.ent_output_filename.get().strip()
+        )
+        # Настройки PDF
+        settings.pdf.export_sources = self.chk_pdf_sources.instate(['selected'])
+        settings.pdf.export_merged_document = self.chk_pdf_merged.instate(['selected'])
+        settings.pdf.output_folder = self.ent_pdf_folder.get().strip()
+        
+        # Настройки слияния
+        # ... здесь будут остальные настройки ...
+        return settings
+
+    def _on_process_files(self):
+        settings = self._get_current_settings()
+        errors = settings.validate_errors()
+        if errors:
+            from tkinter import messagebox
+            messagebox.showerror("Ошибка настроек", "\n".join(errors))
+            return
+
+        self.btn_process.config(state="disabled")
+        self.controller.run_in_thread(
+            lambda: self.controller.process_files(settings, self._update_progress),
+            lambda: self.master.after(0, lambda: self.btn_process.config(state="normal"))
+        )
+
+    def _on_merge_documents(self):
+        settings = self._get_current_settings()
+        self.btn_merge.config(state="disabled")
+        self.controller.run_in_thread(
+            lambda: self.controller.merge_documents(settings, self._update_progress),
+            lambda: self.master.after(0, lambda: self.btn_merge.config(state="normal"))
+        )
+
+    def _update_progress(self, current: int, total: int):
+        self.master.after(0, lambda: self._perform_progress_update(current, total))
+
+    def _perform_progress_update(self, current: int, total: int):
+        if total > 0:
+            val = (current / total) * 100
+            self.progress["value"] = val
+        self._sync_tree()
