@@ -53,6 +53,8 @@ class AppController:
         
         total = len(selected_items)
         # Внутри process_copies уже используется WordApp
+        # Мы передаем callback через обертку, если это необходимо, 
+        # но сейчас логика внутри сервиса
         source_service.process_copies(selected_items, log_service=logger)
         
         progress_callback(total, total)
@@ -65,6 +67,10 @@ class AppController:
 
         setup_application_logging(settings.output_folder)
         with WordApp() as word:
+            if not word.app:
+                logging.error("Word is not available for merging.")
+                return
+
             merge_service = WordMergeService(word, settings)
             pdf_service = PdfExportService(word, settings)
             
@@ -91,6 +97,10 @@ class AppController:
         """Разделение документа по маркерам."""
         setup_application_logging(settings.output_folder)
         with WordApp() as word:
+            if not word.app:
+                logging.error("Word is not available for splitting.")
+                return
+
             split_service = WordSplitService(word, settings)
             progress_callback(0, 100)
             try:

@@ -75,6 +75,9 @@ class MainWindow(ttk.Frame):
         
         self.btn_merge = ttk.Button(action_frame, text="Слияние документов", command=self._on_merge_documents)
         self.btn_merge.pack(side="right", padx=5)
+        
+        self.btn_split = ttk.Button(action_frame, text="Разделить по маркерам", command=self._on_split_documents)
+        self.btn_split.pack(side="right", padx=5)
 
     def _refresh_list(self):
         source_dir = self.wdg_source_folder.get()
@@ -137,6 +140,14 @@ class MainWindow(ttk.Frame):
         self.controller.run_in_thread(
             lambda: self.controller.merge_documents(settings, self._update_progress),
             lambda: self.master.after(0, lambda: self.btn_merge.config(state="normal"))
+        )
+
+    def _on_split_documents(self):
+        settings = self._get_current_settings()
+        self.btn_split.config(state="disabled")
+        self.controller.run_in_thread(
+            lambda: self.controller.split_documents(settings, self._update_progress),
+            lambda: self.master.after(0, lambda: self.btn_split.config(state="normal"))
         )
 
     def _update_progress(self, current: int, total: int):
