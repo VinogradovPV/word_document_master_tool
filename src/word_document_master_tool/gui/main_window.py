@@ -1,10 +1,12 @@
 import tkinter as tk
-from pathlib import Path
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 from ..core.models import ToolSettings
+from ..filesystem.discovery import DocumentDiscovery
 from .controller import AppController
 from .state import GuiState
+from .widgets.document_table import DocumentTableWidget
+from .widgets.folder_widgets import FolderSelectWidget
 
 
 class MainWindow(ttk.Frame):
@@ -16,307 +18,91 @@ class MainWindow(ttk.Frame):
         self._create_widgets()
 
     def _create_widgets(self):
-        # Главный контейнер со скроллбаром
-        main_canvas = tk.Canvas(self)
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=main_canvas.yview)
-        self.scrollable_frame = ttk.Frame(main_canvas)
-
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all"))
-        )
-
-        main_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        main_canvas.configure(yscrollcommand=scrollbar.set)
-
-        # 1. Папки и результат
-        self._create_folder_frame(self.scrollable_frame)
-
-        # 2. Таблица документов
-        self._create_document_table_frame(self.scrollable_frame)
-
-        # 3. Настройки слияния
-        self._create_merge_settings_frame(self.scrollable_frame)
-
-        # 4. Рецензии и комментарии
-        self._create_source_processing_frame(self.scrollable_frame)
-
-        # 5. Нумерация страниц
-        self._create_page_numbering_frame(self.scrollable_frame)
-
-        # 6. Экспорт в PDF
-        self._create_pdf_export_frame(self.scrollable_frame)
-
-        # 7. Маркеры и разделение
-        self._create_markers_frame(self.scrollable_frame)
-
-        # 8. Сноски
-        self._create_footnotes_frame(self.scrollable_frame)
-
-        # 9. Статус и действия
-        self._create_actions_frame(self.scrollable_frame)
-
-        # Размещение главного контейнера
-        main_canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-    def _create_folder_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Папки и результат")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        ttk.Label(frame, text="Исходная папка:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        self.ent_source_folder = ttk.Entry(frame)
-        self.ent_source_folder.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(frame, text="Обзор...", command=lambda: self._browse_folder(self.ent_source_folder)).grid(row=0, column=2, padx=5, pady=2)
-
-        ttk.Label(frame, text="Папка результата:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        self.ent_output_folder = ttk.Entry(frame)
-        self.ent_output_folder.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(frame, text="Обзор...", command=lambda: self._browse_folder(self.ent_output_folder)).grid(row=1, column=2, padx=5, pady=2)
-
-        ttk.Label(frame, text="Имя файла:").grid(row=2, column=0, sticky="w", padx=5, pady=2)
-        self.ent_output_filename = ttk.Entry(frame)
-        self.ent_output_filename.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
-
-        frame.columnconfigure(1, weight=1)
-
-    def _create_document_table_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Список документов")
-        frame.pack(fill="both", expand=True, padx=10, pady=5)
-
-        columns = ("include", "file", "type", "size", "modified", "status")
-        self.tree = ttk.Treeview(frame, columns=columns, show="headings", height=10)
+        # Главный контейнер
+        self.pack(fill="both", expand=True)
         
-        self.tree.heading("include", text="Вкл")
-        self.tree.heading("file", text="Файл")
-        self.tree.heading("type", text="Тип")
-        self.tree.heading("size", text="Размер")
-        self.tree.heading("modified", text="Изменён")
-        self.tree.heading("status", text="Статус")
+        # 1. Папки
+        folder_frame = ttk.LabelFrame(self, text="Папки")
+        folder_frame.pack(fill="x", padx=10, pady=5)
+        
+        self.wdg_source_folder = FolderSelectWidget(folder_frame, "Исходная папка:")
+        self.wdg_source_folder.pack(fill="x", expand=True)
+        
+        self.wdg_output_folder = FolderSelectWidget(folder_frame, "Папка результата:")
+        self.wdg_output_folder.pack(fill="x", expand=True)
+        
+        btn_refresh = ttk.Button(folder_frame, text="Обновить список", command=self._refresh_list)
+        btn_refresh.pack(pady=5)
 
-        self.tree.column("include", width=40, anchor="center")
-        self.tree.column("file", width=300)
-        self.tree.column("type", width=50)
-        self.tree.column("size", width=80)
-        self.tree.column("modified", width=120)
-        self.tree.column("status", width=100)
+        # 2. Список файлов
+        list_frame = ttk.LabelFrame(self, text="Документы")
+        list_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        self.wdg_table = DocumentTableWidget(list_frame, self.state)
+        self.wdg_table.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Кнопки управления списком
+        btn_ctrl_frame = ttk.Frame(list_frame)
+        btn_ctrl_frame.pack(fill="x", padx=5, pady=2)
+        
+        ttk.Button(btn_ctrl_frame, text="Вверх", command=lambda: self._move_item(-1)).pack(side="left", padx=2)
+        ttk.Button(btn_ctrl_frame, text="Вниз", command=lambda: self._move_item(1)).pack(side="left", padx=2)
+        self.lbl_counts = ttk.Label(btn_ctrl_frame, text="Найдено: 0 | Выбрано: 0")
+        self.lbl_counts.pack(side="right", padx=5)
 
-        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        # 3. Настройки PDF
+        pdf_frame = ttk.LabelFrame(self, text="Настройки PDF")
+        pdf_frame.pack(fill="x", padx=10, pady=5)
+        
+        self.var_pdf_sources = tk.BooleanVar(value=True)
+        ttk.Checkbutton(pdf_frame, text="Экспорт исходников в PDF", variable=self.var_pdf_sources).pack(anchor="w", padx=5)
+        
+        self.var_pdf_merged = tk.BooleanVar(value=True)
+        ttk.Checkbutton(pdf_frame, text="Экспорт результата в PDF", variable=self.var_pdf_merged).pack(anchor="w", padx=5)
+        
+        self.wdg_pdf_folder = FolderSelectWidget(pdf_frame, "Папка для PDF:")
+        self.wdg_pdf_folder.pack(fill="x", expand=True)
 
-        self.tree.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        btn_frame = ttk.Frame(frame)
-        btn_frame.pack(side="right", fill="y", padx=5)
-        ttk.Button(btn_frame, text="Вверх", command=self._move_up).pack(fill="x", pady=2)
-        ttk.Button(btn_frame, text="Вниз", command=self._move_down).pack(fill="x", pady=2)
-        ttk.Button(btn_frame, text="Включить все", command=self._select_all).pack(fill="x", pady=2)
-        ttk.Button(btn_frame, text="Выключить все", command=self._clear_all).pack(fill="x", pady=2)
-        ttk.Button(btn_frame, text="Обновить", command=self._refresh_list).pack(fill="x", pady=5)
-
-        self.tree.bind("<Double-1>", self._on_double_click)
-
-    def _create_merge_settings_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Настройки слияния")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        ttk.Label(frame, text="Режим слияния:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        self.cmb_merge_mode = ttk.Combobox(frame, values=[
-            "Со следующей строки",
-            "Через один пустой абзац",
-            "С новой страницы",
-            "С разрывом раздела"
-        ])
-        self.cmb_merge_mode.grid(row=0, column=1, sticky="w", padx=5, pady=2)
-        self.cmb_merge_mode.current(2)
-
-        self.chk_open_after = ttk.Checkbutton(frame, text="Открыть после слияния")
-        self.chk_open_after.grid(row=1, column=0, columnspan=2, sticky="w", padx=5, pady=2)
-
-    def _create_source_processing_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Рецензии и комментарии")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        self.chk_accept_revisions = ttk.Checkbutton(frame, text="Принять исправления")
-        self.chk_accept_revisions.grid(row=0, column=0, sticky="w", padx=5, pady=2)
-
-        self.chk_disable_track = ttk.Checkbutton(frame, text="Отключить Track Changes")
-        self.chk_disable_track.grid(row=0, column=1, sticky="w", padx=5, pady=2)
-
-        self.chk_remove_comments = ttk.Checkbutton(frame, text="Удалить комментарии")
-        self.chk_remove_comments.grid(row=1, column=0, sticky="w", padx=5, pady=2)
-
-    def _create_page_numbering_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Нумерация страниц")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        self.chk_page_num_enabled = ttk.Checkbutton(frame, text="Включить нумерацию страниц")
-        self.chk_page_num_enabled.grid(row=0, column=0, columnspan=2, sticky="w", padx=5, pady=2)
-
-        ttk.Label(frame, text="Начать с:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        self.ent_page_start = ttk.Entry(frame, width=10)
-        self.ent_page_start.grid(row=1, column=1, sticky="w", padx=5, pady=2)
-
-        ttk.Label(frame, text="Расположение:").grid(row=1, column=2, sticky="w", padx=5, pady=2)
-        self.cmb_page_loc = ttk.Combobox(frame, values=["Верхний колонтитул", "Нижний колонтитул"])
-        self.cmb_page_loc.grid(row=1, column=3, sticky="w", padx=5, pady=2)
-
-    def _create_pdf_export_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Экспорт в PDF")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        self.chk_pdf_merged = ttk.Checkbutton(frame, text="PDF итогового документа")
-        self.chk_pdf_merged.grid(row=0, column=0, sticky="w", padx=5, pady=2)
-
-        self.chk_pdf_sources = ttk.Checkbutton(frame, text="PDF исходников без изменений")
-        self.chk_pdf_sources.grid(row=0, column=1, sticky="w", padx=5, pady=2)
-
-        ttk.Label(frame, text="Папка PDF:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        self.ent_pdf_folder = ttk.Entry(frame)
-        self.ent_pdf_folder.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-        ttk.Button(frame, text="Обзор...", command=lambda: self._browse_folder(self.ent_pdf_folder)).grid(row=1, column=2, padx=5, pady=2)
-
-        frame.columnconfigure(1, weight=1)
-
-    def _create_markers_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Маркеры и разделение")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        self.chk_use_markers = ttk.Checkbutton(frame, text="Использовать маркеры")
-        self.chk_use_markers.grid(row=0, column=0, sticky="w", padx=5, pady=2)
-
-        self.btn_split = ttk.Button(frame, text="Разделить по маркерам", command=self._on_split_documents)
-        self.btn_split.grid(row=0, column=1, sticky="e", padx=5, pady=2)
-
-    def _create_footnotes_frame(self, parent):
-        frame = ttk.LabelFrame(parent, text="Сноски")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        self.chk_footnote_enabled = ttk.Checkbutton(frame, text="Включить нумерацию сносок")
-        self.chk_footnote_enabled.grid(row=0, column=0, sticky="w", padx=5, pady=2)
-
-    def _create_actions_frame(self, parent):
-        frame = ttk.Frame(parent)
-        frame.pack(fill="x", padx=10, pady=10)
-
-        self.lbl_status = ttk.Label(frame, text="Готово")
-        self.lbl_status.pack(side="left", padx=5)
-
-        self.lbl_counts = ttk.Label(frame, text="Найдено: 0 | Выбрано: 0")
-        self.lbl_counts.pack(side="left", padx=15)
-
-        self.progress = ttk.Progressbar(frame, orient="horizontal", mode="determinate")
+        # 4. Прогресс и действия
+        action_frame = ttk.Frame(self)
+        action_frame.pack(fill="x", padx=10, pady=10)
+        
+        self.progress = ttk.Progressbar(action_frame, orient="horizontal", mode="determinate")
         self.progress.pack(side="left", fill="x", expand=True, padx=5)
-
-        self.btn_process = ttk.Button(frame, text="Обработать файлы", command=self._on_process_files)
+        
+        self.btn_process = ttk.Button(action_frame, text="Обработать файлы", command=self._on_process_files)
         self.btn_process.pack(side="right", padx=5)
-        self.btn_merge = ttk.Button(frame, text="Слияние документов", command=self._on_merge_documents)
+        
+        self.btn_merge = ttk.Button(action_frame, text="Слияние документов", command=self._on_merge_documents)
         self.btn_merge.pack(side="right", padx=5)
 
-    def _browse_folder(self, entry: ttk.Entry) -> None:
-        from tkinter import filedialog
-        directory = filedialog.askdirectory()
-        if directory:
-            entry.delete(0, tk.END)
-            entry.insert(0, directory)
-
-    def _refresh_list(self) -> None:
-        from tkinter import messagebox
-
-        from ..filesystem.discovery import find_word_documents
-
-        source_folder = self.ent_source_folder.get().strip()
-
-        if not source_folder:
-            messagebox.showwarning("Исходная папка", "Укажите исходную папку.")
+    def _refresh_list(self):
+        source_dir = self.wdg_source_folder.get()
+        if not source_dir:
+            messagebox.showwarning("Внимание", "Выберите исходную папку")
             return
-
-        path = Path(source_folder)
-        if not path.exists() or not path.is_dir():
-            messagebox.showerror("Ошибка", "Указанный путь не существует или не является папкой.")
-            return
-
-        try:
-            items = find_word_documents(source_folder)
-        except Exception as exc:
-            messagebox.showerror("Ошибка", f"Не удалось прочитать папку:\n{exc}")
-            return
-
-        self.state.documents = items
-        self._sync_tree()
-        self.lbl_status.config(text=f"Найдено документов: {len(items)}")
-
-    def _sync_tree(self):
-        """Синхронизирует Treeview с состоянием документов."""
-        for row_id in self.tree.get_children():
-            self.tree.delete(row_id)
-
-        for item in self.state.documents:
-            self.tree.insert(
-                "",
-                "end",
-                values=(
-                    "Да" if item.is_selected else "Нет",
-                    item.file_name,
-                    item.extension,
-                    item.size_bytes,
-                    item.modified_at.strftime("%Y-%m-%d %H:%M"),
-                    item.status.value if hasattr(item.status, "value") else str(item.status),
-                ),
-            )
+            
+        discovery = DocumentDiscovery()
+        files = discovery.find_documents(source_dir)
+        self.state.set_documents(files)
+        self.wdg_table.sync_with_state()
         self._update_counters()
 
-    def _on_double_click(self, event):
-        item_id = self.tree.identify_row(event.y)
-        column = self.tree.identify_column(event.x)
-        if item_id and column == "#1":  # Колонка "Вкл"
-            index = self.tree.index(item_id)
-            doc = self.state.documents[index]
-            doc.is_selected = not doc.is_selected
-            self._sync_tree()
-
-    def _select_all(self):
-        for doc in self.state.documents:
-            doc.is_selected = True
-        self._sync_tree()
-
-    def _clear_all(self):
-        for doc in self.state.documents:
-            doc.is_selected = False
-        self._sync_tree()
-
-    def _move_up(self):
-        selected = self.tree.selection()
+    def _move_item(self, direction: int):
+        selected = self.wdg_table.tree.selection()
         if not selected:
             return
         
-        # Получаем индексы всех выбранных элементов
-        indices = sorted([self.tree.index(s) for s in selected])
+        idx = self.wdg_table.tree.index(selected[0])
+        new_idx = idx + direction
         
-        for idx in indices:
-            if idx > 0:
-                # Меняем местами в списке
-                self.state.documents[idx], self.state.documents[idx-1] = \
-                    self.state.documents[idx-1], self.state.documents[idx]
-        
-        self._sync_tree()
-        # Восстанавливаем выделение (опционально, но полезно)
-
-    def _move_down(self):
-        selected = self.tree.selection()
-        if not selected:
-            return
-        
-        # Получаем индексы в обратном порядке
-        indices = sorted([self.tree.index(s) for s in selected], reverse=True)
-        
-        for idx in indices:
-            if idx < len(self.state.documents) - 1:
-                self.state.documents[idx], self.state.documents[idx+1] = \
-                    self.state.documents[idx+1], self.state.documents[idx]
-        
-        self._sync_tree()
+        if 0 <= new_idx < len(self.state.documents):
+            docs = self.state.documents
+            docs[idx], docs[new_idx] = docs[new_idx], docs[idx]
+            self.wdg_table.sync_with_state()
+            # Восстанавливаем выделение на новом месте
+            children = self.wdg_table.tree.get_children()
+            self.wdg_table.tree.selection_set(children[new_idx])
 
     def _update_counters(self):
         total = len(self.state.documents)
@@ -324,25 +110,18 @@ class MainWindow(ttk.Frame):
         self.lbl_counts.config(text=f"Найдено: {total} | Выбрано: {selected}")
 
     def _get_current_settings(self) -> ToolSettings:
-        """Собирает текущие настройки из GUI в объект ToolSettings."""
         settings = ToolSettings(
-            output_folder=self.ent_output_folder.get().strip(),
-            output_file_name=self.ent_output_filename.get().strip()
+            output_folder=self.wdg_output_folder.get(),
         )
-        # Настройки PDF
-        settings.pdf.export_sources = self.chk_pdf_sources.instate(['selected'])
-        settings.pdf.export_merged_document = self.chk_pdf_merged.instate(['selected'])
-        settings.pdf.output_folder = self.ent_pdf_folder.get().strip()
-        
-        # Настройки слияния
-        # ... здесь будут остальные настройки ...
+        settings.pdf.export_sources = self.var_pdf_sources.get()
+        settings.pdf.export_merged_document = self.var_pdf_merged.get()
+        settings.pdf.output_folder = self.wdg_pdf_folder.get()
         return settings
 
     def _on_process_files(self):
         settings = self._get_current_settings()
         errors = settings.validate_errors()
         if errors:
-            from tkinter import messagebox
             messagebox.showerror("Ошибка настроек", "\n".join(errors))
             return
 
@@ -360,14 +139,6 @@ class MainWindow(ttk.Frame):
             lambda: self.master.after(0, lambda: self.btn_merge.config(state="normal"))
         )
 
-    def _on_split_documents(self):
-        settings = self._get_current_settings()
-        self.btn_split.config(state="disabled")
-        self.controller.run_in_thread(
-            lambda: self.controller.split_documents(settings, self._update_progress),
-            lambda: self.master.after(0, lambda: self.btn_split.config(state="normal"))
-        )
-
     def _update_progress(self, current: int, total: int):
         self.master.after(0, lambda: self._perform_progress_update(current, total))
 
@@ -375,4 +146,5 @@ class MainWindow(ttk.Frame):
         if total > 0:
             val = (current / total) * 100
             self.progress["value"] = val
-        self._sync_tree()
+        self.wdg_table.sync_with_state()
+        self._update_counters()
