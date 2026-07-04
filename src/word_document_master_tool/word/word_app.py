@@ -2,6 +2,7 @@ import contextlib
 import logging
 import os
 import platform
+import time
 
 try:
     if platform.system() == "Windows":
@@ -80,9 +81,9 @@ class WordApp:
             with contextlib.suppress(Exception):
                 pythoncom.CoUninitialize()
 
-    def open_document(self, file_path: str, read_only: bool = True):
+    def open_document(self, file_path: str, read_only: bool = True, retries: int = 3):
         """
-        Безопасно открывает документ.
+        Безопасно открывает документ с поддержкой повторных попыток.
         """
         if not self.app:
             return None
@@ -92,15 +93,24 @@ class WordApp:
             logging.error(f"File not found: {abs_path}")
             return None
 
-        try:
-            return self.app.Documents.Open(
-                FileName=abs_path, 
-                ReadOnly=read_only,
-                AddToRecentFiles=False
-            )
-        except Exception as e:
-            logging.error(f"Failed to open document {file_path}: {e}")
-            return None
+        for attempt in range(retries):
+            try:
+                doc = self.app.Documents.Open(
+                    FileName=abs_path, 
+                    ReadOnly=read_only,
+                    AddToRecentFiles=False,
+                    ConfirmConversions=False,
+                    Visible=self._visible
+                )
+                return doc
+            except Exception as e:
+                logging.warning(f"Attempt {attempt + 1} to open {file_path} failed: {e}")
+                if attempt < retries - 1:
+                    time.sleep(1)
+                else:
+                    logging.error(f"Failed to open document after {retries} attempts: {file_path}")
+        
+        return None
 
     def export_as_pdf(
         self, 
