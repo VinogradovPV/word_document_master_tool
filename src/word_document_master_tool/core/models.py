@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -89,7 +90,7 @@ class FootnoteSettings:
 @dataclass
 class PdfSettings:
     export_merged: bool = False
-    export_sources: bool = False  # Переименовано из export_each_source
+    export_sources: bool = False
     export_processed_copies: bool = False
     merge_generated_pdfs: bool = False
     output_folder: str = ""
@@ -127,11 +128,23 @@ class ToolSettings:
         Проверяет настройки на критические ошибки.
         """
         errors = []
+        
+        # 1. Проверка папок
+        if not self.source_folder:
+            errors.append("Исходная папка не указана.")
         if not self.output_folder:
             errors.append("Папка для сохранения результатов не указана.")
+        
+        if self.source_folder and self.output_folder:
+            src = os.path.abspath(self.source_folder)
+            out = os.path.abspath(self.output_folder)
+            if src == out:
+                errors.append("Исходная папка и папка результатов не могут совпадать.")
 
-        # Page numbering
+        # 2. Нумерация страниц
         if self.page_numbering.enabled:
+            if self.page_numbering.start_number < 1:
+                errors.append("Начальный номер страницы должен быть >= 1.")
             if self.page_numbering.font_size <= 0:
                 errors.append("Размер шрифта нумерации должен быть больше 0.")
             if any(m < 0 for m in [
@@ -142,29 +155,22 @@ class ToolSettings:
             ]):
                 errors.append("Поля страницы не могут быть отрицательными.")
             if self.page_numbering.continuous and self.page_numbering.restart_each_document:
-                errors.append("Сквозная нумерация страниц и сброс в каждом документе взаимоисключаемы.")
-            if (
-                self.page_numbering.remove_headers_footers
-                and self.page_numbering.preserve_headers_footers
-            ):
-                errors.append("Очистка и сохранение колонтитулов взаимоисключаемы.")
+                errors.append("Сквозная нумерация страниц и сброс в каждом документе несовместимы.")
 
-        # Footnotes
+        # 3. Сноски
         if self.footnotes.enabled:
+            if self.footnotes.start_number < 1:
+                errors.append("Начальный номер сносок должен быть >= 1.")
             if self.footnotes.continuous and (
                 self.footnotes.restart_each_document or self.footnotes.restart_each_section
             ):
-                errors.append(
-                    "Сквозная нумерация сносок и сброс в каждом документе/секции взаимоисключаемы."
-                )
-            if self.footnotes.start_number < 1:
-                errors.append("Начальный номер сносок должен быть >= 1.")
+                errors.append("Сквозная нумерация сносок несовместима со сбросом по документам/секциям.")
 
-        # PDF
+        # 4. PDF
         if self.pdf.merge_generated_pdfs and not (
             self.pdf.export_sources or self.pdf.export_processed_copies
         ):
-            errors.append("Слияние PDF невозможно без включенного экспорта в PDF.")
+            errors.append("Слияние PDF невозможно без включенного экспорта отдельных PDF.")
         
         if self.pdf.optimize_for_print and self.pdf.optimize_for_screen:
             errors.append("Выберите только один режим оптимизации PDF (печать или экран).")
@@ -182,13 +188,13 @@ class ToolSettings:
             self.page_numbering.enabled,
             self.footnotes.enabled
         ]):
-            warnings.append(
-                "Экспорт обработанных копий включен, но никакие изменения не применяются."
-            )
+            warnings.append("Экспорт обработанных копий включен, но изменения в них не вносятся.")
+            
+        if not self.output_file_name and self.pdf.export_merged:
+            warnings.append("Имя итогового файла не указано, будет использовано имя по умолчанию.")
+            
         return warnings
 
     def validate(self) -> list[str]:
-        """
-        Устаревший метод для обратной совместимости.
-        """
+        """Для обратной совместимости."""
         return self.validate_errors()
