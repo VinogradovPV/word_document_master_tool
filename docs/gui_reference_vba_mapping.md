@@ -36,11 +36,11 @@
 | Документы | Выкл | Кнопка `Выкл` | `DocumentItem.is_selected` | implemented | Отключает выделенные строки Treeview. |
 | Документы | Выбрать все | Кнопка `Выбрать все` | `DocumentItem.is_selected` | implemented | Массово включает все найденные документы. |
 | Документы | Снять все | Кнопка `Снять все` | `DocumentItem.is_selected` | implemented | Массово отключает все найденные документы. |
-| Настройки объединения | Формат | Нет контрола | `MergeSettings.output_format` | missing | Модель есть, GUI отсутствует. |
-| Настройки объединения | Режим | Нет контрола | `MergeSettings.mode` | missing | Модель есть, GUI отсутствует. |
-| Настройки объединения | Открыть после объединения | Нет контрола | `MergeSettings.open_after_merge` | missing | Модель есть, GUI отсутствует. |
-| Настройки объединения | Создать отчет | Нет контрола | `MergeSettings.create_report` | missing | Модель есть, GUI отсутствует. |
-| Настройки объединения | Создать backup | Нет контрола | `MergeSettings.create_backup` | missing | Модель есть, GUI отсутствует. |
+| Настройки объединения | Формат | Combobox `Формат` | `MergeSettings.output_format` | implemented | Поддерживает `docx`, `docm`, `rtf`. |
+| Настройки объединения | Режим | Combobox `Режим` | `MergeSettings.mode` | implemented | Значения GUI мапятся на числовые режимы сервиса. |
+| Настройки объединения | Открыть после объединения | Чекбокс | `MergeSettings.open_after_merge` | implemented | Значение передается в настройки. |
+| Настройки объединения | Создать отчет | Чекбокс `Создать отчёт` | `MergeSettings.create_report` | implemented | Значение передается в настройки. |
+| Настройки объединения | Создать backup | Чекбокс `Создать backup` | `MergeSettings.create_backup` | implemented | Значение передается в настройки. |
 | Исправления и комментарии | Принять все исправления | Нет контрола | `SourceProcessingSettings.accept_revisions` | missing | Модель и сервис есть, GUI отсутствует. |
 | Исправления и комментарии | Отключить Track Changes | Нет контрола | `SourceProcessingSettings.disable_track_changes` | missing | Модель и сервис есть, GUI отсутствует. |
 | Исправления и комментарии | Удалить комментарии | Нет контрола | `SourceProcessingSettings.remove_comments` | missing | Модель и сервис есть, GUI отсутствует. |

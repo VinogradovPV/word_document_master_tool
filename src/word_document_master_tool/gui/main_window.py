@@ -8,6 +8,13 @@ from .state import GuiState
 from .widgets.document_table import DocumentTableWidget
 from .widgets.folder_widgets import FolderSelectWidget
 
+MERGE_MODE_LABELS = {
+    "С новой строки": 1,
+    "Пустой абзац": 2,
+    "С новой страницы": 3,
+    "Раздел со следующей страницы": 4,
+}
+
 
 class MainWindow(ttk.Frame):
     def __init__(self, master):
@@ -78,7 +85,48 @@ class MainWindow(ttk.Frame):
         self.lbl_counts = ttk.Label(btn_ctrl_frame, text="Найдено: 0 | Выбрано: 0")
         self.lbl_counts.pack(side="right", padx=5)
 
-        # 3. Настройки PDF
+        # 3. Настройки объединения
+        merge_frame = ttk.LabelFrame(self, text="Настройки объединения")
+        merge_frame.pack(fill="x", padx=10, pady=5)
+        merge_frame.columnconfigure(1, weight=1)
+        merge_frame.columnconfigure(3, weight=1)
+
+        ttk.Label(merge_frame, text="Формат:").grid(
+            row=0, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_merge_format = ttk.Combobox(
+            merge_frame, values=("docx", "docm", "rtf"), state="readonly", width=12
+        )
+        self.cmb_merge_format.set("docx")
+        self.cmb_merge_format.grid(row=0, column=1, sticky="w", padx=5, pady=2)
+
+        ttk.Label(merge_frame, text="Режим:").grid(
+            row=0, column=2, sticky="w", padx=5, pady=2
+        )
+        self.cmb_merge_mode = ttk.Combobox(
+            merge_frame, values=tuple(MERGE_MODE_LABELS), state="readonly"
+        )
+        self.cmb_merge_mode.set("С новой страницы")
+        self.cmb_merge_mode.grid(row=0, column=3, sticky="ew", padx=5, pady=2)
+
+        self.var_open_after_merge = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            merge_frame,
+            text="Открыть после объединения",
+            variable=self.var_open_after_merge,
+        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=5, pady=2)
+
+        self.var_create_report = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            merge_frame, text="Создать отчёт", variable=self.var_create_report
+        ).grid(row=1, column=2, sticky="w", padx=5, pady=2)
+
+        self.var_create_backup = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            merge_frame, text="Создать backup", variable=self.var_create_backup
+        ).grid(row=1, column=3, sticky="w", padx=5, pady=2)
+
+        # 4. Настройки PDF
         pdf_frame = ttk.LabelFrame(self, text="Настройки PDF")
         pdf_frame.pack(fill="x", padx=10, pady=5)
         
@@ -95,7 +143,7 @@ class MainWindow(ttk.Frame):
         self.wdg_pdf_folder = FolderSelectWidget(pdf_frame, "Папка для PDF:")
         self.wdg_pdf_folder.pack(fill="x", expand=True)
 
-        # 4. Прогресс и действия
+        # 5. Прогресс и действия
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=10, pady=10)
         
@@ -192,6 +240,11 @@ class MainWindow(ttk.Frame):
             output_folder=self.wdg_output_folder.get(),
             output_file_name=self.ent_output_file_name.get().strip(),
         )
+        settings.merge.output_format = self.cmb_merge_format.get()
+        settings.merge.mode = MERGE_MODE_LABELS.get(self.cmb_merge_mode.get(), 3)
+        settings.merge.open_after_merge = self.var_open_after_merge.get()
+        settings.merge.create_report = self.var_create_report.get()
+        settings.merge.create_backup = self.var_create_backup.get()
         settings.pdf.export_sources = self.var_pdf_sources.get()
         settings.pdf.export_merged = self.var_pdf_merged.get()
         settings.pdf.output_folder = self.wdg_pdf_folder.get()
