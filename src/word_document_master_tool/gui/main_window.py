@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from ..core.models import ToolSettings
+from ..core.models import DocumentStatus, ToolSettings
 from ..filesystem.discovery import DocumentDiscovery
 from .controller import AppController
 from .state import GuiState
@@ -47,19 +47,34 @@ class MainWindow(ttk.Frame):
         list_frame = ttk.LabelFrame(self, text="Документы")
         list_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
-        self.wdg_table = DocumentTableWidget(list_frame, self.state)
+        self.wdg_table = DocumentTableWidget(list_frame, self.state, self._update_counters)
         self.wdg_table.pack(fill="both", expand=True, padx=5, pady=5)
         
         # Кнопки управления списком
         btn_ctrl_frame = ttk.Frame(list_frame)
         btn_ctrl_frame.pack(fill="x", padx=5, pady=2)
         
+        ttk.Button(btn_ctrl_frame, text="Проверить", command=self._check_documents).pack(
+            side="left", padx=2
+        )
         ttk.Button(
             btn_ctrl_frame, text="Вверх", command=lambda: self._move_item(-1)
         ).pack(side="left", padx=2)
         ttk.Button(
             btn_ctrl_frame, text="Вниз", command=lambda: self._move_item(1)
         ).pack(side="left", padx=2)
+        ttk.Button(btn_ctrl_frame, text="Вкл", command=self._enable_selected).pack(
+            side="left", padx=2
+        )
+        ttk.Button(btn_ctrl_frame, text="Выкл", command=self._disable_selected).pack(
+            side="left", padx=2
+        )
+        ttk.Button(btn_ctrl_frame, text="Выбрать все", command=self._select_all).pack(
+            side="left", padx=2
+        )
+        ttk.Button(btn_ctrl_frame, text="Снять все", command=self._clear_all).pack(
+            side="left", padx=2
+        )
         self.lbl_counts = ttk.Label(btn_ctrl_frame, text="Найдено: 0 | Выбрано: 0")
         self.lbl_counts.pack(side="right", padx=5)
 
@@ -129,6 +144,42 @@ class MainWindow(ttk.Frame):
             # Восстанавливаем выделение на новом месте
             children = self.wdg_table.tree.get_children()
             self.wdg_table.tree.selection_set(children[new_idx])
+
+    def _check_documents(self):
+        for doc in self.state.documents:
+            if doc.is_valid:
+                doc.status = DocumentStatus.OK
+                doc.error_message = ""
+            else:
+                doc.status = DocumentStatus.ERROR
+                doc.error_message = "Документ не прошел проверку."
+        self.wdg_table.sync_with_state()
+        self._update_counters()
+
+    def _enable_selected(self):
+        self._set_selected_documents_enabled(True)
+
+    def _disable_selected(self):
+        self._set_selected_documents_enabled(False)
+
+    def _set_selected_documents_enabled(self, enabled: bool):
+        for idx in self.wdg_table.selected_indices():
+            if 0 <= idx < len(self.state.documents):
+                self.state.documents[idx].is_selected = enabled
+        self.wdg_table.sync_with_state()
+        self._update_counters()
+
+    def _select_all(self):
+        for doc in self.state.documents:
+            doc.is_selected = True
+        self.wdg_table.sync_with_state()
+        self._update_counters()
+
+    def _clear_all(self):
+        for doc in self.state.documents:
+            doc.is_selected = False
+        self.wdg_table.sync_with_state()
+        self._update_counters()
 
     def _update_counters(self):
         total = len(self.state.documents)

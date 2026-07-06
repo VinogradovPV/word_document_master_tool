@@ -21,21 +21,21 @@
 | Папки и результат | Обзор исходной папки | Кнопка `Обзор...` | `FolderSelectWidget._browse` | implemented | Реализовано через `filedialog.askdirectory`. |
 | Папки и результат | Обзор папки результата | Кнопка `Обзор...` | `FolderSelectWidget._browse` | implemented | Реализовано через общий виджет выбора папки. |
 | Папки и результат | Обновить список | Кнопка `Обновить список` | `DocumentDiscovery.find_documents` | implemented | Ищет `.docx`, `.docm`, `.doc`, `.rtf`. |
-| Документы | Колонка `Вкл` | Нет отдельной колонки | `DocumentItem.is_selected` | partial | Выбор переключается двойным кликом, но явной колонки нет. |
+| Документы | Колонка `Вкл` | Колонка `Вкл` | `DocumentItem.is_selected` | implemented | Показывает `Да`/`Нет`; переключается кнопками и двойным кликом. |
 | Документы | Колонка `Файл` | Колонка `Файл` | `DocumentItem.file_name` | implemented | Отображается в `DocumentTableWidget`. |
-| Документы | Колонка `Тип` | Нет | `DocumentItem.extension` | missing | Данные есть в модели, но не показаны. |
-| Документы | Колонка `Размер` | Нет | `DocumentItem.size_bytes` | missing | Данные есть в модели, но не показаны. |
-| Документы | Колонка `Изменён` | Нет | `DocumentItem.modified_at` | missing | Данные есть в модели, но не показаны. |
+| Документы | Колонка `Тип` | Колонка `Тип` | `DocumentItem.extension` | implemented | Отображается расширение документа. |
+| Документы | Колонка `Размер` | Колонка `Размер` | `DocumentItem.size_bytes` | implemented | Отображается человекочитаемый размер. |
+| Документы | Колонка `Изменён` | Колонка `Изменён` | `DocumentItem.modified_at` | implemented | Отображается дата и время изменения. |
 | Документы | Колонка `Статус` | Колонка `Статус` | `DocumentItem.status` | implemented | Отображается значение статуса. |
 | Документы | Найдено | Счетчик `Найдено` | `GuiState.documents` | implemented | Обновляется после поиска и прогресса. |
 | Документы | Выбрано | Счетчик `Выбрано` | `GuiState.selected_count` / подсчет в GUI | implemented | Отображает выбранные документы. |
-| Документы | Проверить | Нет кнопки | Нет отдельного сервиса проверки | missing | Требуется отдельное действие в GUI и backend. |
+| Документы | Проверить | Кнопка `Проверить` | `DocumentItem.is_valid`, `DocumentItem.status` | partial | Выполняет легкую GUI-проверку статусов без Word COM. |
 | Документы | Вверх | Кнопка `Вверх` | Перестановка `GuiState.documents` | implemented | Перемещает выбранную строку вверх. |
 | Документы | Вниз | Кнопка `Вниз` | Перестановка `GuiState.documents` | implemented | Перемещает выбранную строку вниз. |
-| Документы | Вкл | Нет кнопки | `DocumentItem.is_selected` | partial | Доступно только двойным кликом по строке. |
-| Документы | Выкл | Нет кнопки | `DocumentItem.is_selected` | partial | Доступно только двойным кликом по строке. |
-| Документы | Выбрать все | Нет кнопки | `DocumentItem.is_selected` | missing | Нужна кнопка массового выбора. |
-| Документы | Снять все | Нет кнопки | `DocumentItem.is_selected` | missing | Нужна кнопка массового снятия выбора. |
+| Документы | Вкл | Кнопка `Вкл` | `DocumentItem.is_selected` | implemented | Включает выделенные строки Treeview. |
+| Документы | Выкл | Кнопка `Выкл` | `DocumentItem.is_selected` | implemented | Отключает выделенные строки Treeview. |
+| Документы | Выбрать все | Кнопка `Выбрать все` | `DocumentItem.is_selected` | implemented | Массово включает все найденные документы. |
+| Документы | Снять все | Кнопка `Снять все` | `DocumentItem.is_selected` | implemented | Массово отключает все найденные документы. |
 | Настройки объединения | Формат | Нет контрола | `MergeSettings.output_format` | missing | Модель есть, GUI отсутствует. |
 | Настройки объединения | Режим | Нет контрола | `MergeSettings.mode` | missing | Модель есть, GUI отсутствует. |
 | Настройки объединения | Открыть после объединения | Нет контрола | `MergeSettings.open_after_merge` | missing | Модель есть, GUI отсутствует. |
