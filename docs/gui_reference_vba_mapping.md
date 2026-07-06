@@ -17,7 +17,7 @@
 |---|---|---|---|---|---|
 | Папки и результат | Исходная папка | `FolderSelectWidget` в `MainWindow` | `ToolSettings.source_folder`, `DocumentDiscovery` | partial | Папка используется для обновления списка, теперь передается в настройки. |
 | Папки и результат | Папка результата | `FolderSelectWidget` в `MainWindow` | `ToolSettings.output_folder` | implemented | Используется при обработке, объединении, логировании и PDF. |
-| Папки и результат | Имя файла | Нет отдельного поля | `ToolSettings.output_file_name` | missing | Модель есть, но GUI-контрол отсутствует. |
+| Папки и результат | Имя файла | Поле `Имя файла` | `ToolSettings.output_file_name` | implemented | Значение передается из GUI в настройки. |
 | Папки и результат | Обзор исходной папки | Кнопка `Обзор...` | `FolderSelectWidget._browse` | implemented | Реализовано через `filedialog.askdirectory`. |
 | Папки и результат | Обзор папки результата | Кнопка `Обзор...` | `FolderSelectWidget._browse` | implemented | Реализовано через общий виджет выбора папки. |
 | Папки и результат | Обновить список | Кнопка `Обновить список` | `DocumentDiscovery.find_documents` | implemented | Ищет `.docx`, `.docm`, `.doc`, `.rtf`. |

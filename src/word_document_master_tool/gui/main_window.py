@@ -30,6 +30,15 @@ class MainWindow(ttk.Frame):
         
         self.wdg_output_folder = FolderSelectWidget(folder_frame, "Папка результата:")
         self.wdg_output_folder.pack(fill="x", expand=True)
+
+        output_name_frame = ttk.Frame(folder_frame)
+        output_name_frame.pack(fill="x", expand=True, padx=5, pady=2)
+        ttk.Label(output_name_frame, text="Имя файла:").grid(
+            row=0, column=0, sticky="w", padx=5, pady=2
+        )
+        self.ent_output_file_name = ttk.Entry(output_name_frame)
+        self.ent_output_file_name.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
+        output_name_frame.columnconfigure(1, weight=1)
         
         btn_refresh = ttk.Button(folder_frame, text="Обновить список", command=self._refresh_list)
         btn_refresh.pack(pady=5)
@@ -130,6 +139,7 @@ class MainWindow(ttk.Frame):
         settings = ToolSettings(
             source_folder=self.wdg_source_folder.get(),
             output_folder=self.wdg_output_folder.get(),
+            output_file_name=self.ent_output_file_name.get().strip(),
         )
         settings.pdf.export_sources = self.var_pdf_sources.get()
         settings.pdf.export_merged = self.var_pdf_merged.get()
