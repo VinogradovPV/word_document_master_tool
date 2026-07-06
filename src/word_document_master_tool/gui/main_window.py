@@ -277,19 +277,70 @@ class MainWindow(ttk.Frame):
         # 6. Настройки PDF
         pdf_frame = ttk.LabelFrame(self, text="Настройки PDF")
         pdf_frame.pack(fill="x", padx=10, pady=5)
+        pdf_frame.columnconfigure(1, weight=1)
+        pdf_frame.columnconfigure(3, weight=1)
         
         self.var_pdf_sources = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             pdf_frame, text="Экспорт исходников в PDF", variable=self.var_pdf_sources
-        ).pack(anchor="w", padx=5)
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=2)
         
         self.var_pdf_merged = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             pdf_frame, text="Экспорт результата в PDF", variable=self.var_pdf_merged
-        ).pack(anchor="w", padx=5)
+        ).grid(row=0, column=1, sticky="w", padx=5, pady=2)
+
+        self.var_pdf_processed = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            pdf_frame,
+            text="PDF обработанных копий",
+            variable=self.var_pdf_processed,
+        ).grid(row=0, column=2, sticky="w", padx=5, pady=2)
+
+        self.var_pdf_merge_generated = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            pdf_frame,
+            text="Создать общий PDF из созданных PDF",
+            variable=self.var_pdf_merge_generated,
+        ).grid(row=0, column=3, sticky="w", padx=5, pady=2)
         
         self.wdg_pdf_folder = FolderSelectWidget(pdf_frame, "Папка для PDF:")
-        self.wdg_pdf_folder.pack(fill="x", expand=True)
+        self.wdg_pdf_folder.grid(row=1, column=0, columnspan=4, sticky="ew")
+
+        ttk.Label(pdf_frame, text="Режим наименования:").grid(
+            row=2, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_pdf_naming = ttk.Combobox(
+            pdf_frame,
+            values=("Как исходный файл", "С префиксом порядка", "С суффиксом типа"),
+            state="readonly",
+        )
+        self.cmb_pdf_naming.set("Как исходный файл")
+        self.cmb_pdf_naming.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(pdf_frame, text="Качество:").grid(
+            row=2, column=2, sticky="w", padx=5, pady=2
+        )
+        self.cmb_pdf_quality = ttk.Combobox(
+            pdf_frame, values=("Печать", "Экран"), state="readonly", width=12
+        )
+        self.cmb_pdf_quality.set("Печать")
+        self.cmb_pdf_quality.grid(row=2, column=3, sticky="w", padx=5, pady=2)
+
+        self.var_pdf_open = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            pdf_frame, text="Открыть PDF", variable=self.var_pdf_open
+        ).grid(row=3, column=0, sticky="w", padx=5, pady=2)
+
+        self.var_pdf_a = tk.BooleanVar(value=False)
+        ttk.Checkbutton(pdf_frame, text="PDF/A", variable=self.var_pdf_a).grid(
+            row=3, column=1, sticky="w", padx=5, pady=2
+        )
+
+        self.var_pdf_properties = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            pdf_frame, text="Свойства", variable=self.var_pdf_properties
+        ).grid(row=3, column=2, sticky="w", padx=5, pady=2)
 
         # 7. Прогресс и действия
         action_frame = ttk.Frame(self)
@@ -433,7 +484,16 @@ class MainWindow(ttk.Frame):
         )
         settings.pdf.export_sources = self.var_pdf_sources.get()
         settings.pdf.export_merged = self.var_pdf_merged.get()
+        settings.pdf.export_processed_copies = self.var_pdf_processed.get()
+        settings.pdf.merge_generated_pdfs = self.var_pdf_merge_generated.get()
         settings.pdf.output_folder = self.wdg_pdf_folder.get()
+        settings.pdf.naming_mode = self.cmb_pdf_naming.get()
+        settings.pdf.quality = self.cmb_pdf_quality.get()
+        settings.pdf.open_after_export = self.var_pdf_open.get()
+        settings.pdf.pdf_a = self.var_pdf_a.get()
+        settings.pdf.include_properties = self.var_pdf_properties.get()
+        settings.pdf.optimize_for_print = self.cmb_pdf_quality.get() == "Печать"
+        settings.pdf.optimize_for_screen = self.cmb_pdf_quality.get() == "Экран"
         return settings
 
     def _on_process_files(self):

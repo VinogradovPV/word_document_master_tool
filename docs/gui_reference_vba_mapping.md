@@ -62,17 +62,17 @@
 | Нумерация страниц | Настроить поля | Чекбокс | `PageNumberingSettings.adjust_margins` | implemented | Значение передается в настройки. |
 | PDF-экспорт | PDF итогового документа | Чекбокс `Экспорт результата в PDF` | `PdfSettings.export_merged` | implemented | GUI пишет в модельное поле. |
 | PDF-экспорт | PDF исходников без изменений | Чекбокс `Экспорт исходников в PDF` | `PdfSettings.export_sources`, `PdfExportService.export_source_to_pdf` | partial | Контрол есть, требуется проверить полный поток действия. |
-| PDF-экспорт | PDF обработанных копий | Нет контрола | `PdfSettings.export_processed_copies` | missing | Модель есть, GUI отсутствует. |
+| PDF-экспорт | PDF обработанных копий | Чекбокс | `PdfSettings.export_processed_copies` | implemented | Значение передается в настройки. |
 | PDF-экспорт | Папка PDF | `FolderSelectWidget` | `PdfSettings.output_folder` | implemented | Используется как папка PDF при наличии значения. |
 | PDF-экспорт | Обзор | Кнопка `Обзор...` | `FolderSelectWidget._browse` | implemented | Реализовано общим виджетом. |
-| PDF-экспорт | Режим наименования | Нет контрола | `PdfSettings.naming_mode` | missing | Модель есть, GUI отсутствует. |
-| PDF-экспорт | Качество | Нет контрола | `PdfSettings.quality`, optimize flags | missing | Модель и валидация есть, GUI отсутствует. |
-| PDF-экспорт | Открыть PDF | Нет контрола | `PdfSettings.open_after_export` | missing | Модель есть, GUI отсутствует. |
-| PDF-экспорт | PDF/A | Нет контрола | `PdfSettings.pdf_a` | missing | Модель и сервис есть, GUI отсутствует. |
-| PDF-экспорт | Свойства | Нет контрола | `PdfSettings.include_properties` | missing | Модель и сервис есть, GUI отсутствует. |
-| PDF-экспорт | Печать | Нет контрола | `PdfSettings.optimize_for_print` | missing | Модель и валидация есть, GUI отсутствует. |
-| PDF-экспорт | Экран | Нет контрола | `PdfSettings.optimize_for_screen` | missing | Модель и валидация есть, GUI отсутствует. |
-| PDF-экспорт | Создать общий PDF из созданных PDF | Нет контрола | `PdfSettings.merge_generated_pdfs`, `PdfMergeService` | missing | Backend через `pypdf` есть, GUI отсутствует. |
+| PDF-экспорт | Режим наименования | Combobox | `PdfSettings.naming_mode` | partial | GUI есть; backend-использование режимов требует проверки. |
+| PDF-экспорт | Качество | Combobox `Качество` | `PdfSettings.quality`, optimize flags | implemented | Взаимоисключающий выбор `Печать`/`Экран`. |
+| PDF-экспорт | Открыть PDF | Чекбокс | `PdfSettings.open_after_export` | partial | GUI есть; открытие после экспорта требует backend-проверки. |
+| PDF-экспорт | PDF/A | Чекбокс | `PdfSettings.pdf_a` | implemented | Значение передается в Word PDF export. |
+| PDF-экспорт | Свойства | Чекбокс | `PdfSettings.include_properties` | implemented | Значение передается в Word PDF export. |
+| PDF-экспорт | Печать | Combobox `Качество` | `PdfSettings.optimize_for_print` | implemented | Взаимоисключающий выбор качества. |
+| PDF-экспорт | Экран | Combobox `Качество` | `PdfSettings.optimize_for_screen` | implemented | Взаимоисключающий выбор качества. |
+| PDF-экспорт | Создать общий PDF из созданных PDF | Чекбокс | `PdfSettings.merge_generated_pdfs`, `PdfMergeService` | implemented | Backend использует `pypdf`. |
 | Маркеры и разделение | Добавлять маркеры частей | Нет контрола | `MarkerSettings.use_markers` | missing | Модель есть, GUI отсутствует. |
 | Маркеры и разделение | Вид маркеров | Нет контрола | `MarkerSettings.visibility` | missing | Модель есть, GUI отсутствует. |
 | Маркеры и разделение | Режим удаления | Нет контрола | `MarkerSettings.removal_mode` | missing | Модель есть, GUI отсутствует. |
