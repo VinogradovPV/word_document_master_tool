@@ -482,24 +482,45 @@ class MainWindow(ttk.Frame):
         # 9. Прогресс и действия
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=10, pady=10)
+
+        self.lbl_status = ttk.Label(action_frame, text="Статус: готово")
+        self.lbl_status.pack(side="top", anchor="w", fill="x", padx=5, pady=2)
         
         self.progress = ttk.Progressbar(action_frame, orient="horizontal", mode="determinate")
-        self.progress.pack(side="left", fill="x", expand=True, padx=5)
+        self.progress.pack(side="top", fill="x", expand=True, padx=5, pady=2)
+
+        log_frame = ttk.Frame(action_frame)
+        log_frame.pack(side="top", fill="both", expand=True, padx=5, pady=2)
+        self.txt_log = tk.Text(log_frame, height=4, wrap="word", state="disabled")
+        self.txt_log.pack(side="left", fill="both", expand=True)
+        log_scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=self.txt_log.yview)
+        log_scrollbar.pack(side="right", fill="y")
+        self.txt_log.configure(yscrollcommand=log_scrollbar.set)
+
+        buttons_frame = ttk.Frame(action_frame)
+        buttons_frame.pack(side="top", fill="x", padx=5, pady=2)
         
         self.btn_process = ttk.Button(
-            action_frame, text="Обработать файлы", command=self._on_process_files
+            buttons_frame, text="Обработать файлы", command=self._on_process_files
         )
         self.btn_process.pack(side="right", padx=5)
         
         self.btn_merge = ttk.Button(
-            action_frame, text="Слияние документов", command=self._on_merge_documents
+            buttons_frame, text="Объединить", command=self._on_merge_documents
         )
         self.btn_merge.pack(side="right", padx=5)
         
         self.btn_split = ttk.Button(
-            action_frame, text="Разделить по маркерам", command=self._on_split_documents
+            buttons_frame, text="Разделить по маркерам", command=self._on_split_documents
         )
         self.btn_split.pack(side="right", padx=5)
+
+        ttk.Button(buttons_frame, text="Сбросить", command=self._reset).pack(
+            side="left", padx=5
+        )
+        ttk.Button(buttons_frame, text="Закрыть", command=self.master.destroy).pack(
+            side="left", padx=5
+        )
 
     def _refresh_list(self):
         source_dir = self.wdg_source_folder.get()
@@ -512,6 +533,8 @@ class MainWindow(ttk.Frame):
         self.state.set_documents(files)
         self.wdg_table.sync_with_state()
         self._update_counters()
+        self._set_status(f"Найдено документов: {len(files)}")
+        self._append_log(f"Список документов обновлен: {len(files)}")
 
     def _move_item(self, direction: int):
         selected = self.wdg_table.tree.selection()
@@ -539,6 +562,8 @@ class MainWindow(ttk.Frame):
                 doc.error_message = "Документ не прошел проверку."
         self.wdg_table.sync_with_state()
         self._update_counters()
+        self._set_status("Проверка документов завершена")
+        self._append_log("Проверка документов завершена")
 
     def _enable_selected(self):
         self._set_selected_documents_enabled(True)
@@ -666,25 +691,31 @@ class MainWindow(ttk.Frame):
             return
 
         self.btn_process.config(state="disabled")
+        self._set_status("Обработка файлов...")
+        self._append_log("Запущена обработка файлов")
         self.controller.run_in_thread(
             lambda: self.controller.process_files(settings, self._update_progress),
-            lambda: self.master.after(0, lambda: self.btn_process.config(state="normal"))
+            lambda: self.master.after(0, lambda: self._finish_action(self.btn_process)),
         )
 
     def _on_merge_documents(self):
         settings = self._get_current_settings()
         self.btn_merge.config(state="disabled")
+        self._set_status("Объединение документов...")
+        self._append_log("Запущено объединение документов")
         self.controller.run_in_thread(
             lambda: self.controller.merge_documents(settings, self._update_progress),
-            lambda: self.master.after(0, lambda: self.btn_merge.config(state="normal"))
+            lambda: self.master.after(0, lambda: self._finish_action(self.btn_merge)),
         )
 
     def _on_split_documents(self):
         settings = self._get_current_settings()
         self.btn_split.config(state="disabled")
+        self._set_status("Разделение по маркерам...")
+        self._append_log("Запущено разделение по маркерам")
         self.controller.run_in_thread(
             lambda: self.controller.split_documents(settings, self._update_progress),
-            lambda: self.master.after(0, lambda: self.btn_split.config(state="normal"))
+            lambda: self.master.after(0, lambda: self._finish_action(self.btn_split)),
         )
 
     def _show_backend_stub(self):
@@ -692,6 +723,8 @@ class MainWindow(ttk.Frame):
             "Функция не подключена",
             "Функция пока не подключена к backend.",
         )
+        self._set_status("Функция пока не подключена к backend.")
+        self._append_log("Функция пока не подключена к backend.")
 
     def _update_progress(self, current: int, total: int):
         self.master.after(0, lambda: self._perform_progress_update(current, total))
@@ -702,6 +735,28 @@ class MainWindow(ttk.Frame):
             self.progress["value"] = val
         self.wdg_table.sync_with_state()
         self._update_counters()
+
+    def _finish_action(self, button):
+        button.config(state="normal")
+        self._set_status("Готово")
+        self._append_log("Операция завершена")
+
+    def _reset(self):
+        self.state.clear_documents()
+        self.wdg_table.sync_with_state()
+        self.progress["value"] = 0
+        self._update_counters()
+        self._set_status("Сброшено")
+        self._append_log("Состояние GUI сброшено")
+
+    def _set_status(self, message: str):
+        self.lbl_status.config(text=f"Статус: {message}")
+
+    def _append_log(self, message: str):
+        self.txt_log.config(state="normal")
+        self.txt_log.insert("end", f"{message}\n")
+        self.txt_log.see("end")
+        self.txt_log.config(state="disabled")
 
     def _add_margin_spinbox(self, master, label: str, row: int, column: int):
         frame = ttk.Frame(master)

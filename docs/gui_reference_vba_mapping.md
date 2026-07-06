@@ -92,9 +92,9 @@
 | Сноски и концевые сноски | Концевые | Чекбокс | `FootnoteSettings.process_endnotes` | implemented | Значение передается в настройки. |
 | Сноски и концевые сноски | Поля | Чекбокс | `FootnoteSettings.update_fields` | implemented | Значение передается в настройки. |
 | Сноски и концевые сноски | Не заменять номера текстом | Чекбокс | `FootnoteSettings.do_not_replace_numbers_with_text` | implemented | Настройка добавлена в модель состояния. |
-| Статус и действия | Статус | Нет отдельной строки статуса | Логи и статусы документов | partial | Есть прогресс и статус в таблице, нет общего status label. |
-| Статус и действия | Лог / прогресс | Progressbar | `ProcessingLogger`, `setup_application_logging` | partial | Progressbar есть, просмотр лога в GUI отсутствует. |
+| Статус и действия | Статус | Label `Статус` | GUI runtime status | implemented | Показывает текущее состояние GUI-действий. |
+| Статус и действия | Лог / прогресс | Text log и Progressbar | `ProcessingLogger`, `setup_application_logging` | implemented | GUI-log дополняет TSV/application logs. |
 | Статус и действия | Обработать файлы | Кнопка `Обработать файлы` | `SourceProcessingService` | partial | Кнопка есть, требуется проверка полного сценария. |
-| Статус и действия | Объединить | Кнопка `Слияние документов` | `WordMergeService` | partial | Кнопка есть, зависит от Word COM и настроек. |
-| Статус и действия | Сбросить | Нет кнопки | `GuiState.clear_documents` | missing | Метод есть, GUI-кнопка отсутствует. |
-| Статус и действия | Закрыть | Нет кнопки | Tk root destroy | missing | Требуется отдельная кнопка закрытия. |
+| Статус и действия | Объединить | Кнопка `Объединить` | `WordMergeService` | partial | Кнопка есть, зависит от Word COM и настроек. |
+| Статус и действия | Сбросить | Кнопка `Сбросить` | `GuiState.clear_documents` | implemented | Очищает таблицу и progressbar. |
+| Статус и действия | Закрыть | Кнопка `Закрыть` | Tk root destroy | implemented | Закрывает окно приложения. |
