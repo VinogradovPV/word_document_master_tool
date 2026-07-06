@@ -130,8 +130,6 @@ class ToolSettings:
         errors = []
         
         # 1. Проверка папок
-        if not self.source_folder:
-            errors.append("Исходная папка не указана.")
         if not self.output_folder:
             errors.append("Папка для сохранения результатов не указана.")
         
@@ -156,6 +154,11 @@ class ToolSettings:
                 errors.append("Поля страницы не могут быть отрицательными.")
             if self.page_numbering.continuous and self.page_numbering.restart_each_document:
                 errors.append("Сквозная нумерация страниц и сброс в каждом документе несовместимы.")
+            if (
+                self.page_numbering.remove_headers_footers
+                and self.page_numbering.preserve_headers_footers
+            ):
+                errors.append("Очистка и сохранение колонтитулов несовместимы.")
 
         # 3. Сноски
         if self.footnotes.enabled:
@@ -164,7 +167,9 @@ class ToolSettings:
             if self.footnotes.continuous and (
                 self.footnotes.restart_each_document or self.footnotes.restart_each_section
             ):
-                errors.append("Сквозная нумерация сносок несовместима со сбросом по документам/секциям.")
+                errors.append(
+                    "Сквозная нумерация сносок несовместима со сбросом по документам/секциям."
+                )
 
         # 4. PDF
         if self.pdf.merge_generated_pdfs and not (

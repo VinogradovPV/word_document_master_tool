@@ -37,7 +37,10 @@ class WordApp:
 
     def __enter__(self):
         if win32com is None:
-            logging.warning("Word COM automation is not available (not Windows or pywin32 not installed).")
+            logging.warning(
+                "Word COM automation is not available "
+                "(not Windows or pywin32 not installed)."
+            )
             return self
 
         try:
@@ -128,7 +131,11 @@ class WordApp:
             
         try:
             abs_output = os.path.abspath(output_path)
-            optimize = WD_EXPORT_OPTIMIZE_FOR_PRINT if optimize_for_print else WD_EXPORT_OPTIMIZE_FOR_SCREEN
+            optimize = (
+                WD_EXPORT_OPTIMIZE_FOR_PRINT
+                if optimize_for_print
+                else WD_EXPORT_OPTIMIZE_FOR_SCREEN
+            )
             
             doc.ExportAsFixedFormat(
                 OutputFileName=abs_output,

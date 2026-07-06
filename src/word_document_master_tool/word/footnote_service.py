@@ -42,7 +42,10 @@ class FootnoteService:
                 # wdNoteNumberStyleLowercaseRoman = 2
                 doc.Endnotes.NumberStyle = 2
             
-            logging.info(f"Footnote numbering applied: start={start_number}, restart={restart_mode}")
+            logging.info(
+                "Footnote numbering applied: "
+                f"start={start_number}, restart={restart_mode}"
+            )
             
         except Exception as e:
             logging.error(f"Failed to apply footnote numbering: {e}")

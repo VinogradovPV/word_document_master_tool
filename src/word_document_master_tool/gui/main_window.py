@@ -45,8 +45,12 @@ class MainWindow(ttk.Frame):
         btn_ctrl_frame = ttk.Frame(list_frame)
         btn_ctrl_frame.pack(fill="x", padx=5, pady=2)
         
-        ttk.Button(btn_ctrl_frame, text="Вверх", command=lambda: self._move_item(-1)).pack(side="left", padx=2)
-        ttk.Button(btn_ctrl_frame, text="Вниз", command=lambda: self._move_item(1)).pack(side="left", padx=2)
+        ttk.Button(
+            btn_ctrl_frame, text="Вверх", command=lambda: self._move_item(-1)
+        ).pack(side="left", padx=2)
+        ttk.Button(
+            btn_ctrl_frame, text="Вниз", command=lambda: self._move_item(1)
+        ).pack(side="left", padx=2)
         self.lbl_counts = ttk.Label(btn_ctrl_frame, text="Найдено: 0 | Выбрано: 0")
         self.lbl_counts.pack(side="right", padx=5)
 
@@ -55,10 +59,14 @@ class MainWindow(ttk.Frame):
         pdf_frame.pack(fill="x", padx=10, pady=5)
         
         self.var_pdf_sources = tk.BooleanVar(value=True)
-        ttk.Checkbutton(pdf_frame, text="Экспорт исходников в PDF", variable=self.var_pdf_sources).pack(anchor="w", padx=5)
+        ttk.Checkbutton(
+            pdf_frame, text="Экспорт исходников в PDF", variable=self.var_pdf_sources
+        ).pack(anchor="w", padx=5)
         
         self.var_pdf_merged = tk.BooleanVar(value=True)
-        ttk.Checkbutton(pdf_frame, text="Экспорт результата в PDF", variable=self.var_pdf_merged).pack(anchor="w", padx=5)
+        ttk.Checkbutton(
+            pdf_frame, text="Экспорт результата в PDF", variable=self.var_pdf_merged
+        ).pack(anchor="w", padx=5)
         
         self.wdg_pdf_folder = FolderSelectWidget(pdf_frame, "Папка для PDF:")
         self.wdg_pdf_folder.pack(fill="x", expand=True)
@@ -70,13 +78,19 @@ class MainWindow(ttk.Frame):
         self.progress = ttk.Progressbar(action_frame, orient="horizontal", mode="determinate")
         self.progress.pack(side="left", fill="x", expand=True, padx=5)
         
-        self.btn_process = ttk.Button(action_frame, text="Обработать файлы", command=self._on_process_files)
+        self.btn_process = ttk.Button(
+            action_frame, text="Обработать файлы", command=self._on_process_files
+        )
         self.btn_process.pack(side="right", padx=5)
         
-        self.btn_merge = ttk.Button(action_frame, text="Слияние документов", command=self._on_merge_documents)
+        self.btn_merge = ttk.Button(
+            action_frame, text="Слияние документов", command=self._on_merge_documents
+        )
         self.btn_merge.pack(side="right", padx=5)
         
-        self.btn_split = ttk.Button(action_frame, text="Разделить по маркерам", command=self._on_split_documents)
+        self.btn_split = ttk.Button(
+            action_frame, text="Разделить по маркерам", command=self._on_split_documents
+        )
         self.btn_split.pack(side="right", padx=5)
 
     def _refresh_list(self):
@@ -114,10 +128,11 @@ class MainWindow(ttk.Frame):
 
     def _get_current_settings(self) -> ToolSettings:
         settings = ToolSettings(
+            source_folder=self.wdg_source_folder.get(),
             output_folder=self.wdg_output_folder.get(),
         )
         settings.pdf.export_sources = self.var_pdf_sources.get()
-        settings.pdf.export_merged_document = self.var_pdf_merged.get()
+        settings.pdf.export_merged = self.var_pdf_merged.get()
         settings.pdf.output_folder = self.wdg_pdf_folder.get()
         return settings
 

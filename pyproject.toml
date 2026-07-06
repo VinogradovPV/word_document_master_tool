@@ -13,6 +13,12 @@ dependencies = [
 wdmt = "word_document_master_tool.cli:main"
 wdmt-gui = "word_document_master_tool.gui.app:main"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",

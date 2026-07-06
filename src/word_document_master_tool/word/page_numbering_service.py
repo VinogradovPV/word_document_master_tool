@@ -63,7 +63,10 @@ class PageNumberingService:
                 except Exception as font_err:
                     logging.warning(f"Failed to set font for page numbers: {font_err}")
 
-            logging.info(f"Page numbering applied: start={start_number}, font={self.settings.page_numbering.font_name}")
+            logging.info(
+                "Page numbering applied: "
+                f"start={start_number}, font={self.settings.page_numbering.font_name}"
+            )
 
         except Exception as e:
             logging.error(f"Failed to apply page numbering: {e}")

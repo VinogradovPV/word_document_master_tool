@@ -36,10 +36,11 @@ class ProcessingLogger:
                 "Сообщение"
             ]
             
-            with self._lock:
-                with open(self.log_path, "w", encoding=self.encoding, newline="") as f:
-                    writer = csv.writer(f, delimiter="\t")
-                    writer.writerow(headers)
+            with self._lock, open(
+                self.log_path, "w", encoding=self.encoding, newline=""
+            ) as f:
+                writer = csv.writer(f, delimiter="\t")
+                writer.writerow(headers)
                     
             logging.info(f"TSV report initialized at: {self.log_path}")
         except Exception as e:
@@ -56,7 +57,11 @@ class ProcessingLogger:
         """
         try:
             # Форматирование диапазонов
-            pages = f"{item.start_page_number}-{item.end_page_number}" if item.page_count > 0 else "-"
+            pages = (
+                f"{item.start_page_number}-{item.end_page_number}"
+                if item.page_count > 0
+                else "-"
+            )
             footnotes = (
                 f"{item.start_footnote_number}-{item.end_footnote_number}"
                 if item.footnote_count > 0
@@ -73,10 +78,11 @@ class ProcessingLogger:
                 message or item.error_message or "-"
             ]
             
-            with self._lock:
-                with open(self.log_path, "a", encoding=self.encoding, newline="") as f:
-                    writer = csv.writer(f, delimiter="\t")
-                    writer.writerow(row)
+            with self._lock, open(
+                self.log_path, "a", encoding=self.encoding, newline=""
+            ) as f:
+                writer = csv.writer(f, delimiter="\t")
+                writer.writerow(row)
         except Exception as e:
             logging.error(f"Failed to write to TSV log: {e}")
 

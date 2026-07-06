@@ -59,7 +59,9 @@ class AppController:
         
         progress_callback(total, total)
 
-    def merge_documents(self, settings: ToolSettings, progress_callback: Callable[[int, int], None]):
+    def merge_documents(
+        self, settings: ToolSettings, progress_callback: Callable[[int, int], None]
+    ):
         """Слияние выбранных документов."""
         selected_items = [item for item in self.state.documents if item.is_selected]
         if not selected_items:
@@ -80,7 +82,7 @@ class AppController:
                 merged_path = merge_service.merge_documents(selected_items)
                 
                 # 2. Экспорт результата в PDF (если нужно)
-                if settings.pdf.export_merged_document and merged_path:
+                if settings.pdf.export_merged and merged_path:
                     pdf_service.export_processed_copy(merged_path)
                 
                 # 3. Объединение PDF (если нужно)
@@ -93,7 +95,9 @@ class AppController:
             finally:
                 progress_callback(100, 100)
 
-    def split_documents(self, settings: ToolSettings, progress_callback: Callable[[int, int], None]):
+    def split_documents(
+        self, settings: ToolSettings, progress_callback: Callable[[int, int], None]
+    ):
         """Разделение документа по маркерам."""
         setup_application_logging(settings.output_folder)
         with WordApp() as word:
