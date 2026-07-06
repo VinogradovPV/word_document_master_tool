@@ -15,6 +15,9 @@ MERGE_MODE_LABELS = {
     "Раздел со следующей страницы": 4,
 }
 
+PAGE_NUMBERING_MODES = ("Сквозная", "Заново в каждом документе")
+HEADER_FOOTER_MODES = ("Сохранять колонтитулы", "Очистить колонтитулы")
+
 
 class MainWindow(ttk.Frame):
     def __init__(self, master):
@@ -156,7 +159,122 @@ class MainWindow(ttk.Frame):
             variable=self.var_warn_protected_docs,
         ).grid(row=1, column=1, sticky="w", padx=5, pady=2)
 
-        # 5. Настройки PDF
+        # 5. Нумерация страниц
+        page_frame = ttk.LabelFrame(self, text="Нумерация страниц")
+        page_frame.pack(fill="x", padx=10, pady=5)
+        page_frame.columnconfigure(1, weight=1)
+        page_frame.columnconfigure(3, weight=1)
+        page_frame.columnconfigure(5, weight=1)
+
+        self.var_page_numbering_enabled = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            page_frame,
+            text="Включить нумерацию страниц",
+            variable=self.var_page_numbering_enabled,
+        ).grid(row=0, column=0, columnspan=2, sticky="w", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Начать с:").grid(
+            row=0, column=2, sticky="w", padx=5, pady=2
+        )
+        self.spn_page_start = ttk.Spinbox(page_frame, from_=1, to=9999, width=8)
+        self.spn_page_start.set("1")
+        self.spn_page_start.grid(row=0, column=3, sticky="w", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Область:").grid(
+            row=1, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_page_scope = ttk.Combobox(
+            page_frame,
+            values=(
+                "Нумеровать обработанные копии документов",
+                "Нумеровать итоговый документ",
+            ),
+            state="readonly",
+        )
+        self.cmb_page_scope.set("Нумеровать обработанные копии документов")
+        self.cmb_page_scope.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Место:").grid(
+            row=1, column=2, sticky="w", padx=5, pady=2
+        )
+        self.cmb_page_location = ttk.Combobox(
+            page_frame,
+            values=("Верхний колонтитул", "Нижний колонтитул"),
+            state="readonly",
+        )
+        self.cmb_page_location.set("Верхний колонтитул")
+        self.cmb_page_location.grid(row=1, column=3, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Выравнивание:").grid(
+            row=1, column=4, sticky="w", padx=5, pady=2
+        )
+        self.cmb_page_alignment = ttk.Combobox(
+            page_frame,
+            values=("По левому краю", "По центру", "По правому краю"),
+            state="readonly",
+        )
+        self.cmb_page_alignment.set("По центру")
+        self.cmb_page_alignment.grid(row=1, column=5, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Формат:").grid(
+            row=2, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_page_format = ttk.Combobox(
+            page_frame, values=("1, 2, 3", "i, ii, iii", "I, II, III"), state="readonly"
+        )
+        self.cmb_page_format.set("1, 2, 3")
+        self.cmb_page_format.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Шрифт:").grid(
+            row=2, column=2, sticky="w", padx=5, pady=2
+        )
+        self.ent_page_font = ttk.Entry(page_frame)
+        self.ent_page_font.insert(0, "Times New Roman")
+        self.ent_page_font.grid(row=2, column=3, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Размер:").grid(
+            row=2, column=4, sticky="w", padx=5, pady=2
+        )
+        self.spn_page_font_size = ttk.Spinbox(page_frame, from_=1, to=72, width=8)
+        self.spn_page_font_size.set("12")
+        self.spn_page_font_size.grid(row=2, column=5, sticky="w", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Режим:").grid(
+            row=3, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_page_numbering_mode = ttk.Combobox(
+            page_frame, values=PAGE_NUMBERING_MODES, state="readonly"
+        )
+        self.cmb_page_numbering_mode.set("Сквозная")
+        self.cmb_page_numbering_mode.grid(row=3, column=1, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(page_frame, text="Колонтитулы:").grid(
+            row=3, column=2, sticky="w", padx=5, pady=2
+        )
+        self.cmb_header_footer_mode = ttk.Combobox(
+            page_frame, values=HEADER_FOOTER_MODES, state="readonly"
+        )
+        self.cmb_header_footer_mode.set("Сохранять колонтитулы")
+        self.cmb_header_footer_mode.grid(row=3, column=3, sticky="ew", padx=5, pady=2)
+
+        self.var_remove_existing_page = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            page_frame,
+            text="Удалить старые PAGE",
+            variable=self.var_remove_existing_page,
+        ).grid(row=3, column=4, columnspan=2, sticky="w", padx=5, pady=2)
+
+        self.var_adjust_page_margins = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            page_frame, text="Настроить поля", variable=self.var_adjust_page_margins
+        ).grid(row=4, column=0, sticky="w", padx=5, pady=2)
+
+        self.spn_margin_top = self._add_margin_spinbox(page_frame, "Верх:", 4, 1)
+        self.spn_margin_bottom = self._add_margin_spinbox(page_frame, "Низ:", 4, 2)
+        self.spn_margin_left = self._add_margin_spinbox(page_frame, "Лево:", 4, 3)
+        self.spn_margin_right = self._add_margin_spinbox(page_frame, "Право:", 4, 4)
+
+        # 6. Настройки PDF
         pdf_frame = ttk.LabelFrame(self, text="Настройки PDF")
         pdf_frame.pack(fill="x", padx=10, pady=5)
         
@@ -173,7 +291,7 @@ class MainWindow(ttk.Frame):
         self.wdg_pdf_folder = FolderSelectWidget(pdf_frame, "Папка для PDF:")
         self.wdg_pdf_folder.pack(fill="x", expand=True)
 
-        # 6. Прогресс и действия
+        # 7. Прогресс и действия
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=10, pady=10)
         
@@ -283,6 +401,36 @@ class MainWindow(ttk.Frame):
         settings.source_processing.warn_protected_docs = (
             self.var_warn_protected_docs.get()
         )
+        settings.page_numbering.enabled = self.var_page_numbering_enabled.get()
+        settings.page_numbering.start_number = self._get_int(self.spn_page_start, 1)
+        settings.page_numbering.scope = self.cmb_page_scope.get()
+        settings.page_numbering.location = self.cmb_page_location.get()
+        settings.page_numbering.alignment = self.cmb_page_alignment.get()
+        settings.page_numbering.format = self.cmb_page_format.get()
+        settings.page_numbering.font_name = self.ent_page_font.get().strip()
+        settings.page_numbering.font_size = self._get_float(self.spn_page_font_size, 12)
+        page_mode = self.cmb_page_numbering_mode.get()
+        settings.page_numbering.continuous = page_mode == "Сквозная"
+        settings.page_numbering.restart_each_document = (
+            page_mode == "Заново в каждом документе"
+        )
+        header_mode = self.cmb_header_footer_mode.get()
+        settings.page_numbering.preserve_headers_footers = (
+            header_mode == "Сохранять колонтитулы"
+        )
+        settings.page_numbering.remove_headers_footers = (
+            header_mode == "Очистить колонтитулы"
+        )
+        settings.page_numbering.remove_existing = self.var_remove_existing_page.get()
+        settings.page_numbering.adjust_margins = self.var_adjust_page_margins.get()
+        settings.page_numbering.top_margin_cm = self._get_float(self.spn_margin_top, 2)
+        settings.page_numbering.bottom_margin_cm = self._get_float(
+            self.spn_margin_bottom, 2
+        )
+        settings.page_numbering.left_margin_cm = self._get_float(self.spn_margin_left, 2)
+        settings.page_numbering.right_margin_cm = self._get_float(
+            self.spn_margin_right, 2
+        )
         settings.pdf.export_sources = self.var_pdf_sources.get()
         settings.pdf.export_merged = self.var_pdf_merged.get()
         settings.pdf.output_folder = self.wdg_pdf_folder.get()
@@ -326,3 +474,26 @@ class MainWindow(ttk.Frame):
             self.progress["value"] = val
         self.wdg_table.sync_with_state()
         self._update_counters()
+
+    def _add_margin_spinbox(self, master, label: str, row: int, column: int):
+        frame = ttk.Frame(master)
+        frame.grid(row=row, column=column, sticky="ew", padx=5, pady=2)
+        ttk.Label(frame, text=label).pack(side="left")
+        spinbox = ttk.Spinbox(frame, from_=0, to=20, increment=0.1, width=6)
+        spinbox.set("2.0")
+        spinbox.pack(side="left", padx=2)
+        return spinbox
+
+    @staticmethod
+    def _get_int(widget, default: int) -> int:
+        try:
+            return int(widget.get())
+        except ValueError:
+            return default
+
+    @staticmethod
+    def _get_float(widget, default: float) -> float:
+        try:
+            return float(widget.get().replace(",", "."))
+        except ValueError:
+            return default

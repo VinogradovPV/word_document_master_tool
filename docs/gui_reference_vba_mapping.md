@@ -45,21 +45,21 @@
 | Исправления и комментарии | Отключить Track Changes | Чекбокс | `SourceProcessingSettings.disable_track_changes` | implemented | Значение передается в настройки обработки. |
 | Исправления и комментарии | Удалить комментарии | Чекбокс | `SourceProcessingSettings.remove_comments` | implemented | Значение передается в настройки обработки. |
 | Исправления и комментарии | Предупреждать о защите | Чекбокс | `SourceProcessingSettings.warn_protected_docs` | implemented | Значение передается в настройки обработки. |
-| Нумерация страниц | Включить нумерацию страниц | Нет контрола | `PageNumberingSettings.enabled` | missing | Модель и сервис есть, GUI отсутствует. |
-| Нумерация страниц | Начать с | Нет контрола | `PageNumberingSettings.start_number` | missing | Модель есть, GUI отсутствует. |
-| Нумерация страниц | Область | Нет контрола | `PageNumberingSettings.scope` | missing | Модель есть, GUI отсутствует. |
-| Нумерация страниц | Место | Нет контрола | `PageNumberingSettings.location` | missing | Модель и сервис есть, GUI отсутствует. |
-| Нумерация страниц | Выравнивание | Нет контрола | `PageNumberingSettings.alignment` | missing | Модель и сервис есть, GUI отсутствует. |
-| Нумерация страниц | Формат | Нет контрола | `PageNumberingSettings.format` | missing | Модель есть, сервис применяет не полностью. |
-| Нумерация страниц | Шрифт | Нет контрола | `PageNumberingSettings.font_name` | missing | Модель и сервис есть, GUI отсутствует. |
-| Нумерация страниц | Размер | Нет контрола | `PageNumberingSettings.font_size` | missing | Модель и сервис есть, GUI отсутствует. |
-| Нумерация страниц | Поля | Нет контрола | `PageNumberingSettings.*_margin_cm` | missing | Модель и сервис есть, GUI отсутствует. |
-| Нумерация страниц | Сквозная | Нет контрола | `PageNumberingSettings.continuous` | missing | Модель и валидация есть, GUI отсутствует. |
-| Нумерация страниц | Заново в каждом документе | Нет контрола | `PageNumberingSettings.restart_each_document` | missing | Модель и валидация есть, GUI отсутствует. |
-| Нумерация страниц | Удалить старые PAGE | Нет контрола | `PageNumberingSettings.remove_existing` | missing | Модель есть, сервис требует проверки полноты. |
-| Нумерация страниц | Сохранять колонтитулы | Нет контрола | `PageNumberingSettings.preserve_headers_footers` | missing | Модель и валидация есть, GUI отсутствует. |
-| Нумерация страниц | Очистить колонтитулы | Нет контрола | `PageNumberingSettings.remove_headers_footers` | missing | Модель, сервис и валидация есть, GUI отсутствует. |
-| Нумерация страниц | Настроить поля | Нет контрола | `PageNumberingSettings.adjust_margins` | missing | Модель и сервис есть, GUI отсутствует. |
+| Нумерация страниц | Включить нумерацию страниц | Чекбокс | `PageNumberingSettings.enabled` | implemented | Значение передается в настройки. |
+| Нумерация страниц | Начать с | Spinbox `Начать с` | `PageNumberingSettings.start_number` | implemented | Значение нормализуется в `int`. |
+| Нумерация страниц | Область | Combobox `Область` | `PageNumberingSettings.scope` | implemented | Значение передается в настройки. |
+| Нумерация страниц | Место | Combobox `Место` | `PageNumberingSettings.location` | implemented | Значение передается в настройки. |
+| Нумерация страниц | Выравнивание | Combobox `Выравнивание` | `PageNumberingSettings.alignment` | implemented | Значение передается в настройки. |
+| Нумерация страниц | Формат | Combobox `Формат` | `PageNumberingSettings.format` | partial | GUI есть; применение формата в Word-сервисе требует проверки полноты. |
+| Нумерация страниц | Шрифт | Поле `Шрифт` | `PageNumberingSettings.font_name` | implemented | Значение передается в настройки. |
+| Нумерация страниц | Размер | Spinbox `Размер` | `PageNumberingSettings.font_size` | implemented | Значение нормализуется в `float`. |
+| Нумерация страниц | Поля | Spinbox-поля верх/низ/лево/право | `PageNumberingSettings.*_margin_cm` | implemented | Значения нормализуются в `float`. |
+| Нумерация страниц | Сквозная | Combobox `Режим` | `PageNumberingSettings.continuous` | implemented | Используется взаимоисключающий режим. |
+| Нумерация страниц | Заново в каждом документе | Combobox `Режим` | `PageNumberingSettings.restart_each_document` | implemented | Используется взаимоисключающий режим. |
+| Нумерация страниц | Удалить старые PAGE | Чекбокс | `PageNumberingSettings.remove_existing` | partial | GUI есть; применение в Word-сервисе требует проверки полноты. |
+| Нумерация страниц | Сохранять колонтитулы | Combobox `Колонтитулы` | `PageNumberingSettings.preserve_headers_footers` | implemented | Используется взаимоисключающий режим. |
+| Нумерация страниц | Очистить колонтитулы | Combobox `Колонтитулы` | `PageNumberingSettings.remove_headers_footers` | implemented | Используется взаимоисключающий режим. |
+| Нумерация страниц | Настроить поля | Чекбокс | `PageNumberingSettings.adjust_margins` | implemented | Значение передается в настройки. |
 | PDF-экспорт | PDF итогового документа | Чекбокс `Экспорт результата в PDF` | `PdfSettings.export_merged` | implemented | GUI пишет в модельное поле. |
 | PDF-экспорт | PDF исходников без изменений | Чекбокс `Экспорт исходников в PDF` | `PdfSettings.export_sources`, `PdfExportService.export_source_to_pdf` | partial | Контрол есть, требуется проверить полный поток действия. |
 | PDF-экспорт | PDF обработанных копий | Нет контрола | `PdfSettings.export_processed_copies` | missing | Модель есть, GUI отсутствует. |
