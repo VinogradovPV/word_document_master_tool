@@ -41,10 +41,10 @@
 | Настройки объединения | Открыть после объединения | Чекбокс | `MergeSettings.open_after_merge` | implemented | Значение передается в настройки. |
 | Настройки объединения | Создать отчет | Чекбокс `Создать отчёт` | `MergeSettings.create_report` | implemented | Значение передается в настройки. |
 | Настройки объединения | Создать backup | Чекбокс `Создать backup` | `MergeSettings.create_backup` | implemented | Значение передается в настройки. |
-| Исправления и комментарии | Принять все исправления | Нет контрола | `SourceProcessingSettings.accept_revisions` | missing | Модель и сервис есть, GUI отсутствует. |
-| Исправления и комментарии | Отключить Track Changes | Нет контрола | `SourceProcessingSettings.disable_track_changes` | missing | Модель и сервис есть, GUI отсутствует. |
-| Исправления и комментарии | Удалить комментарии | Нет контрола | `SourceProcessingSettings.remove_comments` | missing | Модель и сервис есть, GUI отсутствует. |
-| Исправления и комментарии | Предупреждать о защите | Нет контрола | `SourceProcessingSettings.warn_protected_docs` | missing | Модель есть, GUI отсутствует. |
+| Исправления и комментарии | Принять все исправления | Чекбокс | `SourceProcessingSettings.accept_revisions` | implemented | Значение передается в настройки обработки. |
+| Исправления и комментарии | Отключить Track Changes | Чекбокс | `SourceProcessingSettings.disable_track_changes` | implemented | Значение передается в настройки обработки. |
+| Исправления и комментарии | Удалить комментарии | Чекбокс | `SourceProcessingSettings.remove_comments` | implemented | Значение передается в настройки обработки. |
+| Исправления и комментарии | Предупреждать о защите | Чекбокс | `SourceProcessingSettings.warn_protected_docs` | implemented | Значение передается в настройки обработки. |
 | Нумерация страниц | Включить нумерацию страниц | Нет контрола | `PageNumberingSettings.enabled` | missing | Модель и сервис есть, GUI отсутствует. |
 | Нумерация страниц | Начать с | Нет контрола | `PageNumberingSettings.start_number` | missing | Модель есть, GUI отсутствует. |
 | Нумерация страниц | Область | Нет контрола | `PageNumberingSettings.scope` | missing | Модель есть, GUI отсутствует. |

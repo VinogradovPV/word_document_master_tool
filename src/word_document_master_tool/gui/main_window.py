@@ -126,7 +126,37 @@ class MainWindow(ttk.Frame):
             merge_frame, text="Создать backup", variable=self.var_create_backup
         ).grid(row=1, column=3, sticky="w", padx=5, pady=2)
 
-        # 4. Настройки PDF
+        # 4. Исправления и комментарии
+        source_frame = ttk.LabelFrame(self, text="Исправления и комментарии")
+        source_frame.pack(fill="x", padx=10, pady=5)
+
+        self.var_accept_revisions = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            source_frame,
+            text="Принять все исправления",
+            variable=self.var_accept_revisions,
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=2)
+
+        self.var_disable_track_changes = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            source_frame,
+            text="Отключить Track Changes",
+            variable=self.var_disable_track_changes,
+        ).grid(row=0, column=1, sticky="w", padx=5, pady=2)
+
+        self.var_remove_comments = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            source_frame, text="Удалить комментарии", variable=self.var_remove_comments
+        ).grid(row=1, column=0, sticky="w", padx=5, pady=2)
+
+        self.var_warn_protected_docs = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            source_frame,
+            text="Предупреждать о защите",
+            variable=self.var_warn_protected_docs,
+        ).grid(row=1, column=1, sticky="w", padx=5, pady=2)
+
+        # 5. Настройки PDF
         pdf_frame = ttk.LabelFrame(self, text="Настройки PDF")
         pdf_frame.pack(fill="x", padx=10, pady=5)
         
@@ -143,7 +173,7 @@ class MainWindow(ttk.Frame):
         self.wdg_pdf_folder = FolderSelectWidget(pdf_frame, "Папка для PDF:")
         self.wdg_pdf_folder.pack(fill="x", expand=True)
 
-        # 5. Прогресс и действия
+        # 6. Прогресс и действия
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=10, pady=10)
         
@@ -245,6 +275,14 @@ class MainWindow(ttk.Frame):
         settings.merge.open_after_merge = self.var_open_after_merge.get()
         settings.merge.create_report = self.var_create_report.get()
         settings.merge.create_backup = self.var_create_backup.get()
+        settings.source_processing.accept_revisions = self.var_accept_revisions.get()
+        settings.source_processing.disable_track_changes = (
+            self.var_disable_track_changes.get()
+        )
+        settings.source_processing.remove_comments = self.var_remove_comments.get()
+        settings.source_processing.warn_protected_docs = (
+            self.var_warn_protected_docs.get()
+        )
         settings.pdf.export_sources = self.var_pdf_sources.get()
         settings.pdf.export_merged = self.var_pdf_merged.get()
         settings.pdf.output_folder = self.wdg_pdf_folder.get()
