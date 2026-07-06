@@ -17,6 +17,15 @@ MERGE_MODE_LABELS = {
 
 PAGE_NUMBERING_MODES = ("Сквозная", "Заново в каждом документе")
 HEADER_FOOTER_MODES = ("Сохранять колонтитулы", "Очистить колонтитулы")
+MARKER_VISIBILITY_LABELS = {
+    "Невидимые": 1,
+    "Ненавязчивые": 2,
+    "Явные": 3,
+}
+MARKER_REMOVAL_LABELS = {
+    "Только визуальные": 1,
+    "Полное удаление": 2,
+}
 
 
 class MainWindow(ttk.Frame):
@@ -274,7 +283,55 @@ class MainWindow(ttk.Frame):
         self.spn_margin_left = self._add_margin_spinbox(page_frame, "Лево:", 4, 3)
         self.spn_margin_right = self._add_margin_spinbox(page_frame, "Право:", 4, 4)
 
-        # 6. Настройки PDF
+        # 6. Маркеры и разделение
+        markers_frame = ttk.LabelFrame(self, text="Маркеры и разделение")
+        markers_frame.pack(fill="x", padx=10, pady=5)
+        markers_frame.columnconfigure(1, weight=1)
+        markers_frame.columnconfigure(3, weight=1)
+
+        self.var_use_markers = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            markers_frame,
+            text="Добавлять маркеры частей",
+            variable=self.var_use_markers,
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=2)
+
+        ttk.Label(markers_frame, text="Вид маркеров:").grid(
+            row=0, column=1, sticky="w", padx=5, pady=2
+        )
+        self.cmb_marker_visibility = ttk.Combobox(
+            markers_frame, values=tuple(MARKER_VISIBILITY_LABELS), state="readonly"
+        )
+        self.cmb_marker_visibility.set("Невидимые")
+        self.cmb_marker_visibility.grid(row=0, column=2, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(markers_frame, text="Режим удаления:").grid(
+            row=1, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_marker_removal = ttk.Combobox(
+            markers_frame, values=tuple(MARKER_REMOVAL_LABELS), state="readonly"
+        )
+        self.cmb_marker_removal.set("Только визуальные")
+        self.cmb_marker_removal.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+        self.var_backup_before_marker_removal = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            markers_frame,
+            text="Backup перед удалением",
+            variable=self.var_backup_before_marker_removal,
+        ).grid(row=1, column=2, sticky="w", padx=5, pady=2)
+
+        ttk.Button(
+            markers_frame, text="Удалить маркеры", command=self._show_backend_stub
+        ).grid(row=1, column=3, sticky="w", padx=5, pady=2)
+
+        ttk.Label(
+            markers_frame,
+            text="Полное удаление опасно",
+            foreground="firebrick",
+        ).grid(row=2, column=0, columnspan=4, sticky="w", padx=5, pady=2)
+
+        # 7. Настройки PDF
         pdf_frame = ttk.LabelFrame(self, text="Настройки PDF")
         pdf_frame.pack(fill="x", padx=10, pady=5)
         pdf_frame.columnconfigure(1, weight=1)
@@ -342,7 +399,7 @@ class MainWindow(ttk.Frame):
             pdf_frame, text="Свойства", variable=self.var_pdf_properties
         ).grid(row=3, column=2, sticky="w", padx=5, pady=2)
 
-        # 7. Прогресс и действия
+        # 8. Прогресс и действия
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=10, pady=10)
         
@@ -482,6 +539,16 @@ class MainWindow(ttk.Frame):
         settings.page_numbering.right_margin_cm = self._get_float(
             self.spn_margin_right, 2
         )
+        settings.markers.use_markers = self.var_use_markers.get()
+        settings.markers.visibility = MARKER_VISIBILITY_LABELS.get(
+            self.cmb_marker_visibility.get(), 1
+        )
+        settings.markers.removal_mode = MARKER_REMOVAL_LABELS.get(
+            self.cmb_marker_removal.get(), 1
+        )
+        settings.markers.backup_before_removal = (
+            self.var_backup_before_marker_removal.get()
+        )
         settings.pdf.export_sources = self.var_pdf_sources.get()
         settings.pdf.export_merged = self.var_pdf_merged.get()
         settings.pdf.export_processed_copies = self.var_pdf_processed.get()
@@ -523,6 +590,12 @@ class MainWindow(ttk.Frame):
         self.controller.run_in_thread(
             lambda: self.controller.split_documents(settings, self._update_progress),
             lambda: self.master.after(0, lambda: self.btn_split.config(state="normal"))
+        )
+
+    def _show_backend_stub(self):
+        messagebox.showinfo(
+            "Функция не подключена",
+            "Функция пока не подключена к backend.",
         )
 
     def _update_progress(self, current: int, total: int):

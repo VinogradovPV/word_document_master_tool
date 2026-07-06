@@ -73,13 +73,13 @@
 | PDF-экспорт | Печать | Combobox `Качество` | `PdfSettings.optimize_for_print` | implemented | Взаимоисключающий выбор качества. |
 | PDF-экспорт | Экран | Combobox `Качество` | `PdfSettings.optimize_for_screen` | implemented | Взаимоисключающий выбор качества. |
 | PDF-экспорт | Создать общий PDF из созданных PDF | Чекбокс | `PdfSettings.merge_generated_pdfs`, `PdfMergeService` | implemented | Backend использует `pypdf`. |
-| Маркеры и разделение | Добавлять маркеры частей | Нет контрола | `MarkerSettings.use_markers` | missing | Модель есть, GUI отсутствует. |
-| Маркеры и разделение | Вид маркеров | Нет контрола | `MarkerSettings.visibility` | missing | Модель есть, GUI отсутствует. |
-| Маркеры и разделение | Режим удаления | Нет контрола | `MarkerSettings.removal_mode` | missing | Модель есть, GUI отсутствует. |
-| Маркеры и разделение | Удалить маркеры | Нет кнопки | `WordMarkerService` | missing | Сервис есть, GUI отсутствует. |
+| Маркеры и разделение | Добавлять маркеры частей | Чекбокс | `MarkerSettings.use_markers` | implemented | Значение передается в настройки. |
+| Маркеры и разделение | Вид маркеров | Combobox | `MarkerSettings.visibility` | implemented | Значение мапится на числовой режим модели. |
+| Маркеры и разделение | Режим удаления | Combobox | `MarkerSettings.removal_mode` | implemented | Значение мапится на числовой режим модели. |
+| Маркеры и разделение | Удалить маркеры | Кнопка `Удалить маркеры` | Требуется подключение к `WordMarkerService` | partial | Кнопка показывает честный backend-stub. |
 | Маркеры и разделение | Разделить | Кнопка `Разделить по маркерам` | `WordSplitService` | partial | Кнопка есть, но входной файл и статусы не оформлены полноценно. |
-| Маркеры и разделение | Backup перед удалением | Нет контрола | `MarkerSettings.backup_before_removal` | missing | Модель есть, GUI отсутствует. |
-| Маркеры и разделение | Полное удаление опасно | Нет предупреждения | Требуется GUI validation/warning | missing | Требуется отдельное предупреждение. |
+| Маркеры и разделение | Backup перед удалением | Чекбокс | `MarkerSettings.backup_before_removal` | implemented | Значение передается в настройки. |
+| Маркеры и разделение | Полное удаление опасно | Warning label | GUI warning | implemented | Предупреждение показано в блоке маркеров. |
 | Сноски и концевые сноски | Нумерация сносок | Нет контрола | `FootnoteSettings.enabled` | missing | Модель и сервис есть, GUI отсутствует. |
 | Сноски и концевые сноски | Начать с | Нет контрола | `FootnoteSettings.start_number` | missing | Модель и сервис есть, GUI отсутствует. |
 | Сноски и концевые сноски | Область | Нет контрола | `FootnoteSettings.scope` | missing | Модель есть, GUI отсутствует. |
