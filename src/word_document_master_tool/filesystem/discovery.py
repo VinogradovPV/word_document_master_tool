@@ -4,6 +4,13 @@ from datetime import datetime
 from ..core.models import DocumentItem
 
 
+class DocumentDiscovery:
+    """Класс-обертка для поиска документов в файлах."""
+
+    def find_documents(self, folder_path: str) -> list[DocumentItem]:
+        return find_word_documents(folder_path)
+
+
 def find_word_documents(folder_path: str) -> list[DocumentItem]:
     """
     Находит поддерживаемые документы Word в указанной папке.
