@@ -85,6 +85,7 @@ class FootnoteSettings:
     preserve_text: bool = True
     process_endnotes: bool = False
     update_fields: bool = True
+    do_not_replace_numbers_with_text: bool = True
 
 
 @dataclass

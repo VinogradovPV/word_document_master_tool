@@ -26,6 +26,11 @@ MARKER_REMOVAL_LABELS = {
     "Только визуальные": 1,
     "Полное удаление": 2,
 }
+FOOTNOTE_MODES = (
+    "Сквозная",
+    "Заново в документе",
+    "Заново в секции",
+)
 
 
 class MainWindow(ttk.Frame):
@@ -399,7 +404,82 @@ class MainWindow(ttk.Frame):
             pdf_frame, text="Свойства", variable=self.var_pdf_properties
         ).grid(row=3, column=2, sticky="w", padx=5, pady=2)
 
-        # 8. Прогресс и действия
+        # 8. Сноски и концевые сноски
+        footnote_frame = ttk.LabelFrame(self, text="Сноски и концевые сноски")
+        footnote_frame.pack(fill="x", padx=10, pady=5)
+        footnote_frame.columnconfigure(1, weight=1)
+        footnote_frame.columnconfigure(3, weight=1)
+
+        self.var_footnotes_enabled = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            footnote_frame,
+            text="Нумерация сносок",
+            variable=self.var_footnotes_enabled,
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=2)
+
+        ttk.Label(footnote_frame, text="Начать с:").grid(
+            row=0, column=1, sticky="w", padx=5, pady=2
+        )
+        self.spn_footnote_start = ttk.Spinbox(footnote_frame, from_=1, to=9999, width=8)
+        self.spn_footnote_start.set("1")
+        self.spn_footnote_start.grid(row=0, column=2, sticky="w", padx=5, pady=2)
+
+        ttk.Label(footnote_frame, text="Область:").grid(
+            row=1, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_footnote_scope = ttk.Combobox(
+            footnote_frame,
+            values=("Нумеровать итоговый документ", "Нумеровать обработанные копии"),
+            state="readonly",
+        )
+        self.cmb_footnote_scope.set("Нумеровать итоговый документ")
+        self.cmb_footnote_scope.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(footnote_frame, text="Режим:").grid(
+            row=1, column=2, sticky="w", padx=5, pady=2
+        )
+        self.cmb_footnote_mode = ttk.Combobox(
+            footnote_frame, values=FOOTNOTE_MODES, state="readonly"
+        )
+        self.cmb_footnote_mode.set("Сквозная")
+        self.cmb_footnote_mode.grid(row=1, column=3, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(footnote_frame, text="Формат:").grid(
+            row=2, column=0, sticky="w", padx=5, pady=2
+        )
+        self.cmb_footnote_format = ttk.Combobox(
+            footnote_frame,
+            values=("1, 2, 3", "i, ii, iii", "I, II, III", "a, b, c"),
+            state="readonly",
+        )
+        self.cmb_footnote_format.set("1, 2, 3")
+        self.cmb_footnote_format.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
+
+        self.var_preserve_footnote_text = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            footnote_frame,
+            text="Сохранять текст",
+            variable=self.var_preserve_footnote_text,
+        ).grid(row=2, column=2, sticky="w", padx=5, pady=2)
+
+        self.var_process_endnotes = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            footnote_frame, text="Концевые", variable=self.var_process_endnotes
+        ).grid(row=2, column=3, sticky="w", padx=5, pady=2)
+
+        self.var_update_footnote_fields = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            footnote_frame, text="Поля", variable=self.var_update_footnote_fields
+        ).grid(row=3, column=0, sticky="w", padx=5, pady=2)
+
+        self.var_keep_footnote_numbers = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            footnote_frame,
+            text="Не заменять номера текстом",
+            variable=self.var_keep_footnote_numbers,
+        ).grid(row=3, column=1, columnspan=2, sticky="w", padx=5, pady=2)
+
+        # 9. Прогресс и действия
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=10, pady=10)
         
@@ -561,6 +641,21 @@ class MainWindow(ttk.Frame):
         settings.pdf.include_properties = self.var_pdf_properties.get()
         settings.pdf.optimize_for_print = self.cmb_pdf_quality.get() == "Печать"
         settings.pdf.optimize_for_screen = self.cmb_pdf_quality.get() == "Экран"
+        settings.footnotes.enabled = self.var_footnotes_enabled.get()
+        settings.footnotes.start_number = self._get_int(self.spn_footnote_start, 1)
+        settings.footnotes.scope = self.cmb_footnote_scope.get()
+        footnote_mode = self.cmb_footnote_mode.get()
+        settings.footnotes.mode = footnote_mode
+        settings.footnotes.continuous = footnote_mode == "Сквозная"
+        settings.footnotes.restart_each_document = footnote_mode == "Заново в документе"
+        settings.footnotes.restart_each_section = footnote_mode == "Заново в секции"
+        settings.footnotes.format = self.cmb_footnote_format.get()
+        settings.footnotes.preserve_text = self.var_preserve_footnote_text.get()
+        settings.footnotes.process_endnotes = self.var_process_endnotes.get()
+        settings.footnotes.update_fields = self.var_update_footnote_fields.get()
+        settings.footnotes.do_not_replace_numbers_with_text = (
+            self.var_keep_footnote_numbers.get()
+        )
         return settings
 
     def _on_process_files(self):

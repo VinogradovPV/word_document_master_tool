@@ -80,18 +80,18 @@
 | Маркеры и разделение | Разделить | Кнопка `Разделить по маркерам` | `WordSplitService` | partial | Кнопка есть, но входной файл и статусы не оформлены полноценно. |
 | Маркеры и разделение | Backup перед удалением | Чекбокс | `MarkerSettings.backup_before_removal` | implemented | Значение передается в настройки. |
 | Маркеры и разделение | Полное удаление опасно | Warning label | GUI warning | implemented | Предупреждение показано в блоке маркеров. |
-| Сноски и концевые сноски | Нумерация сносок | Нет контрола | `FootnoteSettings.enabled` | missing | Модель и сервис есть, GUI отсутствует. |
-| Сноски и концевые сноски | Начать с | Нет контрола | `FootnoteSettings.start_number` | missing | Модель и сервис есть, GUI отсутствует. |
-| Сноски и концевые сноски | Область | Нет контрола | `FootnoteSettings.scope` | missing | Модель есть, GUI отсутствует. |
-| Сноски и концевые сноски | Режим | Нет контрола | `FootnoteSettings.mode` | missing | Модель есть, GUI отсутствует. |
-| Сноски и концевые сноски | Формат | Нет контрола | `FootnoteSettings.format` | missing | Модель есть, сервис применяет не полностью. |
-| Сноски и концевые сноски | Сквозная | Нет контрола | `FootnoteSettings.continuous` | missing | Модель и валидация есть, GUI отсутствует. |
-| Сноски и концевые сноски | Заново в документе | Нет контрола | `FootnoteSettings.restart_each_document` | missing | Модель и валидация есть, GUI отсутствует. |
-| Сноски и концевые сноски | Заново в секции | Нет контрола | `FootnoteSettings.restart_each_section` | missing | Модель, сервис и валидация есть, GUI отсутствует. |
-| Сноски и концевые сноски | Сохранять текст | Нет контрола | `FootnoteSettings.preserve_text` | missing | Модель есть, GUI отсутствует. |
-| Сноски и концевые сноски | Концевые | Нет контрола | `FootnoteSettings.process_endnotes` | missing | Модель и сервис есть, GUI отсутствует. |
-| Сноски и концевые сноски | Поля | Нет контрола | `FootnoteSettings.update_fields` | missing | Модель есть, GUI отсутствует. |
-| Сноски и концевые сноски | Не заменять номера текстом | Нет контрола | Требуется настройка | missing | В модели нет отдельного поля. |
+| Сноски и концевые сноски | Нумерация сносок | Чекбокс | `FootnoteSettings.enabled` | implemented | Значение передается в настройки. |
+| Сноски и концевые сноски | Начать с | Spinbox | `FootnoteSettings.start_number` | implemented | Значение нормализуется в `int`. |
+| Сноски и концевые сноски | Область | Combobox | `FootnoteSettings.scope` | implemented | Значение передается в настройки. |
+| Сноски и концевые сноски | Режим | Combobox | `FootnoteSettings.mode` | implemented | Используется взаимоисключающий режим. |
+| Сноски и концевые сноски | Формат | Combobox | `FootnoteSettings.format` | partial | GUI есть; применение формата в Word-сервисе требует проверки полноты. |
+| Сноски и концевые сноски | Сквозная | Combobox `Режим` | `FootnoteSettings.continuous` | implemented | Используется взаимоисключающий режим. |
+| Сноски и концевые сноски | Заново в документе | Combobox `Режим` | `FootnoteSettings.restart_each_document` | implemented | Используется взаимоисключающий режим. |
+| Сноски и концевые сноски | Заново в секции | Combobox `Режим` | `FootnoteSettings.restart_each_section` | implemented | Используется взаимоисключающий режим. |
+| Сноски и концевые сноски | Сохранять текст | Чекбокс | `FootnoteSettings.preserve_text` | implemented | Значение передается в настройки. |
+| Сноски и концевые сноски | Концевые | Чекбокс | `FootnoteSettings.process_endnotes` | implemented | Значение передается в настройки. |
+| Сноски и концевые сноски | Поля | Чекбокс | `FootnoteSettings.update_fields` | implemented | Значение передается в настройки. |
+| Сноски и концевые сноски | Не заменять номера текстом | Чекбокс | `FootnoteSettings.do_not_replace_numbers_with_text` | implemented | Настройка добавлена в модель состояния. |
 | Статус и действия | Статус | Нет отдельной строки статуса | Логи и статусы документов | partial | Есть прогресс и статус в таблице, нет общего status label. |
 | Статус и действия | Лог / прогресс | Progressbar | `ProcessingLogger`, `setup_application_logging` | partial | Progressbar есть, просмотр лога в GUI отсутствует. |
 | Статус и действия | Обработать файлы | Кнопка `Обработать файлы` | `SourceProcessingService` | partial | Кнопка есть, требуется проверка полного сценария. |
