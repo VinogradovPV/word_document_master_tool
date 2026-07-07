@@ -42,7 +42,8 @@ class DocumentTableWidget(ttk.Frame):
 
     def _on_double_click(self, event):
         item_id = self.tree.identify_row(event.y)
-        if not item_id:
+        column_id = self.tree.identify_column(event.x)
+        if not item_id or column_id != "#1":
             return
         
         idx = self.tree.index(item_id)
