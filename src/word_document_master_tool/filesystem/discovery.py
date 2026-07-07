@@ -1,14 +1,17 @@
 import os
 from datetime import datetime
 
-from ..core.models import DocumentItem
+from ..core.models import DocumentItem, SourceKind
+
+WORD_EXTENSIONS = {".docx", ".docm", ".doc", ".rtf"}
+EXCEL_EXTENSIONS = {".xls", ".xlsx"}
 
 
 class DocumentDiscovery:
     """Класс-обертка для поиска документов в файлах."""
 
     def find_documents(self, folder_path: str) -> list[DocumentItem]:
-        return find_word_documents(folder_path)
+        return find_source_documents(folder_path)
 
 
 def find_word_documents(folder_path: str) -> list[DocumentItem]:
@@ -16,7 +19,18 @@ def find_word_documents(folder_path: str) -> list[DocumentItem]:
     Находит поддерживаемые документы Word в указанной папке.
     Игнорирует временные файлы Word (начинающиеся с ~$ ).
     """
-    supported_extensions = {".docx", ".docm", ".doc", ".rtf"}
+    return _find_documents(folder_path, WORD_EXTENSIONS)
+
+
+def find_source_documents(folder_path: str) -> list[DocumentItem]:
+    """
+    Находит поддерживаемые исходники Word и Excel.
+    Игнорирует временные Office-файлы (начинающиеся с ~$).
+    """
+    return _find_documents(folder_path, WORD_EXTENSIONS | EXCEL_EXTENSIONS)
+
+
+def _find_documents(folder_path: str, supported_extensions: set[str]) -> list[DocumentItem]:
     items = []
 
     if not os.path.isdir(folder_path):
@@ -33,6 +47,7 @@ def find_word_documents(folder_path: str) -> list[DocumentItem]:
         if ext in supported_extensions:
             file_path = os.path.join(folder_path, file_name)
             stats = os.stat(file_path)
+            source_kind = SourceKind.EXCEL if ext in EXCEL_EXTENSIONS else SourceKind.WORD
 
             items.append(
                 DocumentItem(
@@ -42,6 +57,7 @@ def find_word_documents(folder_path: str) -> list[DocumentItem]:
                     extension=ext[1:],
                     size_bytes=stats.st_size,
                     modified_at=datetime.fromtimestamp(stats.st_mtime),
+                    source_kind=source_kind,
                 )
             )
             order_index += 1

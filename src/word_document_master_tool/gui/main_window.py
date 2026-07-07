@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from ..core.execution_plan import ExecutionPlan, build_execution_plan
-from ..core.models import DocumentStatus, ToolSettings
+from ..core.models import DocumentStatus, SourceKind, ToolSettings
 from ..filesystem.discovery import DocumentDiscovery
 from .controller import AppController
 from .state import GuiState
@@ -103,9 +103,9 @@ class MainWindow(ttk.Frame):
         self.ent_output_file_name.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
         output_name_frame.columnconfigure(1, weight=1)
 
-        ttk.Button(
-            folder_frame, text="Обновить список", command=self._refresh_list
-        ).pack(anchor="w", padx=5, pady=5)
+        ttk.Button(folder_frame, text="Обновить список", command=self._refresh_list).pack(
+            anchor="w", padx=5, pady=5
+        )
 
         scenario_frame = ttk.LabelFrame(self.tab_main, text="Сценарий работы")
         scenario_frame.pack(fill="x", padx=10, pady=(0, 10))
@@ -162,7 +162,7 @@ class MainWindow(ttk.Frame):
         ttk.Label(filter_frame, text="Показать:").pack(side="left", padx=(8, 2))
         self.cmb_document_filter_mode = ttk.Combobox(
             filter_frame,
-            values=("все", "выбранные", "с ошибками"),
+            values=("все", "выбранные", "с ошибками", "Word", "Excel"),
             state="readonly",
             width=14,
         )
@@ -184,18 +184,10 @@ class MainWindow(ttk.Frame):
         ttk.Button(buttons, text="Вниз", command=lambda: self._move_item(1)).pack(
             side="left", padx=2
         )
-        ttk.Button(buttons, text="Вкл", command=self._enable_selected).pack(
-            side="left", padx=2
-        )
-        ttk.Button(buttons, text="Выкл", command=self._disable_selected).pack(
-            side="left", padx=2
-        )
-        ttk.Button(buttons, text="Выбрать все", command=self._select_all).pack(
-            side="left", padx=2
-        )
-        ttk.Button(buttons, text="Снять все", command=self._clear_all).pack(
-            side="left", padx=2
-        )
+        ttk.Button(buttons, text="Вкл", command=self._enable_selected).pack(side="left", padx=2)
+        ttk.Button(buttons, text="Выкл", command=self._disable_selected).pack(side="left", padx=2)
+        ttk.Button(buttons, text="Выбрать все", command=self._select_all).pack(side="left", padx=2)
+        ttk.Button(buttons, text="Снять все", command=self._clear_all).pack(side="left", padx=2)
 
         self.lbl_counts = ttk.Label(buttons, text="Найдено: 0 | Выбрано: 0")
         self.lbl_counts.pack(side="right", padx=5)
@@ -219,18 +211,14 @@ class MainWindow(ttk.Frame):
         merge_frame.columnconfigure(1, weight=1)
         merge_frame.columnconfigure(3, weight=1)
 
-        ttk.Label(merge_frame, text="Формат:").grid(
-            row=0, column=0, sticky="w", padx=5, pady=2
-        )
+        ttk.Label(merge_frame, text="Формат:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
         self.cmb_merge_format = ttk.Combobox(
             merge_frame, values=("docx", "docm", "rtf"), state="readonly", width=12
         )
         self.cmb_merge_format.set("docx")
         self.cmb_merge_format.grid(row=0, column=1, sticky="w", padx=5, pady=2)
 
-        ttk.Label(merge_frame, text="Режим:").grid(
-            row=0, column=2, sticky="w", padx=5, pady=2
-        )
+        ttk.Label(merge_frame, text="Режим:").grid(row=0, column=2, sticky="w", padx=5, pady=2)
         self.cmb_merge_mode = ttk.Combobox(
             merge_frame, values=tuple(MERGE_MODE_LABELS), state="readonly"
         )
@@ -245,12 +233,12 @@ class MainWindow(ttk.Frame):
             text="Открыть после объединения",
             variable=self.var_open_after_merge,
         ).grid(row=1, column=0, columnspan=2, sticky="w", padx=5, pady=2)
-        ttk.Checkbutton(
-            merge_frame, text="Создать отчёт", variable=self.var_create_report
-        ).grid(row=1, column=2, sticky="w", padx=5, pady=2)
-        ttk.Checkbutton(
-            merge_frame, text="Создать backup", variable=self.var_create_backup
-        ).grid(row=1, column=3, sticky="w", padx=5, pady=2)
+        ttk.Checkbutton(merge_frame, text="Создать отчёт", variable=self.var_create_report).grid(
+            row=1, column=2, sticky="w", padx=5, pady=2
+        )
+        ttk.Checkbutton(merge_frame, text="Создать backup", variable=self.var_create_backup).grid(
+            row=1, column=3, sticky="w", padx=5, pady=2
+        )
 
         source_frame = ttk.LabelFrame(self.tab_word, text="Исправления и комментарии")
         source_frame.pack(fill="x", padx=10, pady=(0, 10))
@@ -343,9 +331,7 @@ class MainWindow(ttk.Frame):
             "1, 2, 3",
         )
 
-        ttk.Label(page_frame, text="Шрифт:").grid(
-            row=2, column=2, sticky="w", padx=5, pady=2
-        )
+        ttk.Label(page_frame, text="Шрифт:").grid(row=2, column=2, sticky="w", padx=5, pady=2)
         self.ent_page_font = ttk.Entry(page_frame)
         self.ent_page_font.insert(0, "Times New Roman")
         self.ent_page_font.grid(row=2, column=3, sticky="ew", padx=5, pady=2)
@@ -407,6 +393,7 @@ class MainWindow(ttk.Frame):
 
         self.var_pdf_merged = tk.BooleanVar(value=True)
         self.var_pdf_sources = tk.BooleanVar(value=True)
+        self.var_pdf_excel_sources = tk.BooleanVar(value=False)
         self.var_pdf_processed = tk.BooleanVar(value=False)
         self.var_pdf_merge_generated = tk.BooleanVar(value=False)
         ttk.Checkbutton(
@@ -430,6 +417,23 @@ class MainWindow(ttk.Frame):
         self.wdg_pdf_folder = FolderSelectWidget(pdf_frame, "Папка PDF:")
         self.wdg_pdf_folder.grid(row=1, column=0, columnspan=4, sticky="ew")
 
+        excel_frame = ttk.LabelFrame(self.tab_pdf, text="Excel -> PDF")
+        excel_frame.pack(fill="x", padx=10, pady=(0, 10))
+        ttk.Checkbutton(
+            excel_frame,
+            text="Экспортировать XLS/XLSX в PDF",
+            variable=self.var_pdf_excel_sources,
+        ).pack(anchor="w", padx=8, pady=4)
+        ttk.Label(
+            excel_frame,
+            text=(
+                "MVP экспортирует всю книгу. Excel-файлы участвуют только в PDF; "
+                "Word-настройки к ним не применяются."
+            ),
+            wraplength=900,
+            foreground="firebrick",
+        ).pack(anchor="w", padx=8, pady=(0, 6))
+
         self.cmb_pdf_naming = self._add_labeled_combobox(
             pdf_frame,
             "Режим наименования:",
@@ -451,9 +455,9 @@ class MainWindow(ttk.Frame):
         ttk.Checkbutton(pdf_frame, text="PDF/A", variable=self.var_pdf_a).grid(
             row=3, column=1, sticky="w", padx=5, pady=2
         )
-        ttk.Checkbutton(
-            pdf_frame, text="Свойства", variable=self.var_pdf_properties
-        ).grid(row=3, column=2, sticky="w", padx=5, pady=2)
+        ttk.Checkbutton(pdf_frame, text="Свойства", variable=self.var_pdf_properties).grid(
+            row=3, column=2, sticky="w", padx=5, pady=2
+        )
 
         warning_frame = ttk.LabelFrame(self.tab_pdf, text="Предупреждения")
         warning_frame.pack(fill="x", padx=10, pady=(0, 10))
@@ -463,6 +467,7 @@ class MainWindow(ttk.Frame):
                 "PDF исходников без изменений не применяет исправления, нумерацию, "
                 "сноски и другие изменения.\n"
                 "PDF обработанных копий требует создания обработанных копий.\n"
+                "Excel-файлы открываются только для чтения и экспортируются всей книгой.\n"
                 "Общий PDF создаётся только из уже созданных отдельных PDF через pypdf."
             ),
             wraplength=900,
@@ -522,12 +527,12 @@ class MainWindow(ttk.Frame):
             text="Backup перед удалением",
             variable=self.var_backup_before_marker_removal,
         ).grid(row=1, column=2, sticky="w", padx=5, pady=2)
-        ttk.Button(
-            markers_frame, text="Удалить маркеры", command=self._show_backend_stub
-        ).grid(row=1, column=3, sticky="w", padx=5, pady=2)
-        ttk.Button(
-            markers_frame, text="Разделить", command=self._on_split_documents
-        ).grid(row=2, column=3, sticky="w", padx=5, pady=2)
+        ttk.Button(markers_frame, text="Удалить маркеры", command=self._show_backend_stub).grid(
+            row=1, column=3, sticky="w", padx=5, pady=2
+        )
+        ttk.Button(markers_frame, text="Разделить", command=self._on_split_documents).grid(
+            row=2, column=3, sticky="w", padx=5, pady=2
+        )
         ttk.Label(
             markers_frame,
             text="Полное удаление опасно",
@@ -546,9 +551,7 @@ class MainWindow(ttk.Frame):
             text="Нумерация сносок",
             variable=self.var_footnotes_enabled,
         ).grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        self.spn_footnote_start = self._add_labeled_spinbox(
-            footnote_frame, "Начать с:", 0, 1
-        )
+        self.spn_footnote_start = self._add_labeled_spinbox(footnote_frame, "Начать с:", 0, 1)
         self.spn_footnote_start.set("1")
         self.cmb_footnote_scope = self._add_labeled_combobox(
             footnote_frame,
@@ -579,12 +582,12 @@ class MainWindow(ttk.Frame):
             text="Сохранять текст",
             variable=self.var_preserve_footnote_text,
         ).grid(row=2, column=2, sticky="w", padx=5, pady=2)
-        ttk.Checkbutton(
-            footnote_frame, text="Концевые", variable=self.var_process_endnotes
-        ).grid(row=2, column=3, sticky="w", padx=5, pady=2)
-        ttk.Checkbutton(
-            footnote_frame, text="Поля", variable=self.var_update_footnote_fields
-        ).grid(row=3, column=0, sticky="w", padx=5, pady=2)
+        ttk.Checkbutton(footnote_frame, text="Концевые", variable=self.var_process_endnotes).grid(
+            row=2, column=3, sticky="w", padx=5, pady=2
+        )
+        ttk.Checkbutton(footnote_frame, text="Поля", variable=self.var_update_footnote_fields).grid(
+            row=3, column=0, sticky="w", padx=5, pady=2
+        )
         ttk.Checkbutton(
             footnote_frame,
             text="Не заменять номера текстом",
@@ -612,9 +615,9 @@ class MainWindow(ttk.Frame):
         ttk.Button(buttons, text="Очистить журнал", command=self._clear_journal).pack(
             side="left", padx=2
         )
-        ttk.Button(
-            buttons, text="Копировать диагностику", command=self._copy_diagnostics
-        ).pack(side="left", padx=2)
+        ttk.Button(buttons, text="Копировать диагностику", command=self._copy_diagnostics).pack(
+            side="left", padx=2
+        )
         ttk.Button(
             buttons, text="Копировать план выполнения", command=self._copy_execution_plan
         ).pack(side="left", padx=2)
@@ -640,9 +643,7 @@ class MainWindow(ttk.Frame):
         buttons = ttk.Frame(action_frame)
         buttons.pack(side="top", fill="x", padx=5, pady=2)
         ttk.Button(buttons, text="Сбросить", command=self._reset).pack(side="left", padx=5)
-        ttk.Button(buttons, text="Закрыть", command=self.master.destroy).pack(
-            side="left", padx=5
-        )
+        ttk.Button(buttons, text="Закрыть", command=self.master.destroy).pack(side="left", padx=5)
         self.btn_process = ttk.Button(
             buttons,
             text="Выполнить выбранные операции",
@@ -702,6 +703,8 @@ class MainWindow(ttk.Frame):
             "все": "all",
             "выбранные": "selected",
             "с ошибками": "errors",
+            "Word": "word",
+            "Excel": "excel",
         }
         self.wdg_table.set_filter(
             self.ent_document_filter.get(),
@@ -751,9 +754,7 @@ class MainWindow(ttk.Frame):
         settings.merge.create_report = self.var_create_report.get()
         settings.merge.create_backup = self.var_create_backup.get()
         settings.source_processing.accept_revisions = self.var_accept_revisions.get()
-        settings.source_processing.disable_track_changes = (
-            self.var_disable_track_changes.get()
-        )
+        settings.source_processing.disable_track_changes = self.var_disable_track_changes.get()
         settings.source_processing.remove_comments = self.var_remove_comments.get()
         settings.source_processing.warn_protected_docs = self.var_warn_protected_docs.get()
         self._apply_page_settings(settings)
@@ -773,37 +774,28 @@ class MainWindow(ttk.Frame):
         settings.page_numbering.font_size = self._get_float(self.spn_page_font_size, 12)
         page_mode = self.cmb_page_numbering_mode.get()
         settings.page_numbering.continuous = page_mode == "Сквозная"
-        settings.page_numbering.restart_each_document = (
-            page_mode == "Заново в каждом документе"
-        )
+        settings.page_numbering.restart_each_document = page_mode == "Заново в каждом документе"
         header_mode = self.cmb_header_footer_mode.get()
         settings.page_numbering.preserve_headers_footers = header_mode == "Сохранять"
         settings.page_numbering.remove_headers_footers = header_mode == "Очистить"
         settings.page_numbering.remove_existing = self.var_remove_existing_page.get()
         settings.page_numbering.adjust_margins = self.var_adjust_page_margins.get()
         settings.page_numbering.top_margin_cm = self._get_float(self.spn_margin_top, 2)
-        settings.page_numbering.bottom_margin_cm = self._get_float(
-            self.spn_margin_bottom, 2
-        )
+        settings.page_numbering.bottom_margin_cm = self._get_float(self.spn_margin_bottom, 2)
         settings.page_numbering.left_margin_cm = self._get_float(self.spn_margin_left, 2)
-        settings.page_numbering.right_margin_cm = self._get_float(
-            self.spn_margin_right, 2
-        )
+        settings.page_numbering.right_margin_cm = self._get_float(self.spn_margin_right, 2)
 
     def _apply_marker_settings(self, settings: ToolSettings):
         settings.markers.use_markers = self.var_use_markers.get()
         settings.markers.visibility = MARKER_VISIBILITY_LABELS.get(
             self.cmb_marker_visibility.get(), 1
         )
-        settings.markers.removal_mode = MARKER_REMOVAL_LABELS.get(
-            self.cmb_marker_removal.get(), 1
-        )
-        settings.markers.backup_before_removal = (
-            self.var_backup_before_marker_removal.get()
-        )
+        settings.markers.removal_mode = MARKER_REMOVAL_LABELS.get(self.cmb_marker_removal.get(), 1)
+        settings.markers.backup_before_removal = self.var_backup_before_marker_removal.get()
 
     def _apply_pdf_settings(self, settings: ToolSettings):
         settings.pdf.export_sources = self.var_pdf_sources.get()
+        settings.pdf.export_excel_sources = self.var_pdf_excel_sources.get()
         settings.pdf.export_merged = self.var_pdf_merged.get()
         settings.pdf.export_processed_copies = self.var_pdf_processed.get()
         settings.pdf.merge_generated_pdfs = self.var_pdf_merge_generated.get()
@@ -829,9 +821,7 @@ class MainWindow(ttk.Frame):
         settings.footnotes.preserve_text = self.var_preserve_footnote_text.get()
         settings.footnotes.process_endnotes = self.var_process_endnotes.get()
         settings.footnotes.update_fields = self.var_update_footnote_fields.get()
-        settings.footnotes.do_not_replace_numbers_with_text = (
-            self.var_keep_footnote_numbers.get()
-        )
+        settings.footnotes.do_not_replace_numbers_with_text = self.var_keep_footnote_numbers.get()
 
     def _on_process_files(self):
         settings = self._get_current_settings()
@@ -923,15 +913,24 @@ class MainWindow(ttk.Frame):
         total = len(self.state.documents)
         selected = self.state.selected_count()
         settings = self._get_current_settings()
-        plan = build_execution_plan(settings, selected)
+        plan = self._build_execution_plan_for_state(settings)
         pdf_modes = []
         if settings.pdf.export_sources:
             pdf_modes.append("исходники")
+        if settings.pdf.export_excel_sources:
+            pdf_modes.append("Excel")
         if settings.pdf.export_merged:
             pdf_modes.append("итоговый")
         if settings.pdf.export_processed_copies:
             pdf_modes.append("обработанные копии")
-        self.lbl_summary_documents.config(text=f"Документы: найдено {total}, выбрано {selected}")
+        word_count = self._selected_source_count(SourceKind.WORD)
+        excel_count = self._selected_source_count(SourceKind.EXCEL)
+        self.lbl_summary_documents.config(
+            text=(
+                f"Документы: найдено {total}, выбрано {selected}; "
+                f"Word {word_count}, Excel {excel_count}"
+            )
+        )
         self.lbl_summary_pdf.config(text=f"PDF-режимы: {', '.join(pdf_modes) or '-'}")
         self.lbl_summary_operation.config(text=f"Последняя операция: {self.last_operation}")
         self.lbl_summary_log.config(text=f"Последний лог: {last_log or '-'}")
@@ -981,6 +980,7 @@ class MainWindow(ttk.Frame):
         profile = self.cmb_workflow_profile.get()
         if profile == "Только PDF исходников без изменений":
             self.var_pdf_sources.set(True)
+            self.var_pdf_excel_sources.set(True)
             self.var_pdf_merged.set(False)
             self.var_pdf_processed.set(False)
             self.var_pdf_merge_generated.set(False)
@@ -991,6 +991,7 @@ class MainWindow(ttk.Frame):
             self.var_footnotes_enabled.set(False)
         elif profile == "Объединить Word-документы":
             self.var_pdf_sources.set(False)
+            self.var_pdf_excel_sources.set(False)
             self.var_pdf_merged.set(False)
             self.var_pdf_processed.set(False)
             self.var_pdf_merge_generated.set(False)
@@ -1000,6 +1001,7 @@ class MainWindow(ttk.Frame):
             self.var_pdf_processed.set(True)
         elif profile == "Полная обработка":
             self.var_pdf_sources.set(True)
+            self.var_pdf_excel_sources.set(True)
             self.var_pdf_merged.set(True)
             self.var_pdf_processed.set(True)
             self.var_pdf_merge_generated.set(True)
@@ -1015,7 +1017,7 @@ class MainWindow(ttk.Frame):
         self._refresh_workflow_views()
 
     def _validate_before_run(self, settings: ToolSettings) -> bool:
-        plan = build_execution_plan(settings, self.state.selected_count())
+        plan = self._build_execution_plan_for_state(settings)
         if plan.errors:
             messagebox.showerror(
                 "Нельзя выполнить операцию",
@@ -1031,12 +1033,13 @@ class MainWindow(ttk.Frame):
         return True
 
     def _build_current_plan(self) -> ExecutionPlan:
-        return build_execution_plan(self._get_current_settings(), self.state.selected_count())
+        return self._build_execution_plan_for_state(self._get_current_settings())
 
     def _bind_workflow_refresh(self):
         variables = [
             self.var_pdf_merged,
             self.var_pdf_sources,
+            self.var_pdf_excel_sources,
             self.var_pdf_processed,
             self.var_pdf_merge_generated,
             self.var_page_numbering_enabled,
@@ -1084,6 +1087,7 @@ class MainWindow(ttk.Frame):
         folder_status = "указана" if settings.pdf.output_folder else "не указана"
         return (
             f"PDF исходников: {self._yes_no(settings.pdf.export_sources)}\n"
+            f"PDF из Excel: {self._yes_no(settings.pdf.export_excel_sources)}\n"
             f"PDF итогового документа: {self._yes_no(settings.pdf.export_merged)}\n"
             f"PDF обработанных копий: {self._yes_no(settings.pdf.export_processed_copies)}\n"
             f"Общий PDF: {self._yes_no(settings.pdf.merge_generated_pdfs)}\n"
@@ -1101,6 +1105,21 @@ class MainWindow(ttk.Frame):
     def _yes_no(value: bool) -> str:
         return "да" if value else "нет"
 
+    def _build_execution_plan_for_state(self, settings: ToolSettings) -> ExecutionPlan:
+        return build_execution_plan(
+            settings,
+            self.state.selected_count(),
+            word_count=self._selected_source_count(SourceKind.WORD),
+            excel_count=self._selected_source_count(SourceKind.EXCEL),
+        )
+
+    def _selected_source_count(self, source_kind: SourceKind) -> int:
+        return sum(
+            1
+            for item in self.state.documents
+            if item.is_selected and item.source_kind == source_kind
+        )
+
     def _add_labeled_combobox(
         self, master, label: str, row: int, column: int, values, default: str
     ):
@@ -1114,9 +1133,7 @@ class MainWindow(ttk.Frame):
     def _add_help_block(master, title: str, lines: list[str]) -> None:
         frame = ttk.LabelFrame(master, text=title)
         frame.pack(fill="x", padx=10, pady=10)
-        ttk.Label(frame, text="\n".join(lines), wraplength=900).pack(
-            anchor="w", padx=8, pady=6
-        )
+        ttk.Label(frame, text="\n".join(lines), wraplength=900).pack(anchor="w", padx=8, pady=6)
 
     def _add_labeled_spinbox(self, master, label: str, row: int, column: int):
         ttk.Label(master, text=label).grid(row=row, column=column, sticky="w", padx=5, pady=2)

@@ -3,7 +3,8 @@ import threading
 from collections.abc import Callable
 
 from ..core.logging_service import ProcessingLogger, setup_application_logging
-from ..core.models import ToolSettings
+from ..core.models import SourceKind, ToolSettings
+from ..pdf.pdf_export_coordinator import PdfExportCoordinator
 from ..pdf.pdf_export_service import PdfExportService
 from ..pdf.pdf_merge_service import PdfMergeService
 from ..word.merge_service import WordMergeService
@@ -26,7 +27,7 @@ class AppController:
         """Запускает задачу в отдельном потоке."""
         if self._is_running:
             return
-        
+
         def wrapper():
             self._is_running = True
             try:
@@ -49,14 +50,22 @@ class AppController:
 
         setup_application_logging(settings.output_folder)
         logger = ProcessingLogger(settings.output_folder)
-        source_service = SourceProcessingService(settings)
-        
+
         total = len(selected_items)
-        # Внутри process_copies уже используется WordApp
-        # Мы передаем callback через обертку, если это необходимо, 
-        # но сейчас логика внутри сервиса
-        source_service.process_copies(selected_items, log_service=logger)
-        
+        if self._word_processing_requested(settings):
+            source_service = SourceProcessingService(settings)
+            source_service.process_copies(selected_items, log_service=logger)
+
+        if settings.pdf.export_sources or settings.pdf.export_excel_sources:
+            pdf_coordinator = PdfExportCoordinator(settings)
+            pdf_coordinator.export_sources_to_pdf(selected_items, log_service=logger)
+
+        if settings.pdf.merge_generated_pdfs:
+            pdf_merge_service = PdfMergeService(settings)
+            result = pdf_merge_service.merge_pdfs(selected_items)
+            if not result.success:
+                logging.error(f"PDF merge failed: {result.error_message}")
+
         progress_callback(total, total)
 
     def merge_documents(
@@ -68,32 +77,37 @@ class AppController:
             return
 
         setup_application_logging(settings.output_folder)
-        with WordApp() as word:
-            if not word.app:
-                logging.error("Word is not available for merging.")
-                return
+        logger = ProcessingLogger(settings.output_folder)
 
-            merge_service = WordMergeService(word, settings)
-            pdf_service = PdfExportService(word, settings)
-            
-            progress_callback(0, 100)
-            try:
-                # 1. Слияние в Word
-                merged_path = merge_service.merge_documents(selected_items)
-                
-                # 2. Экспорт результата в PDF (если нужно)
-                if settings.pdf.export_merged and merged_path:
-                    pdf_service.export_processed_copy(merged_path)
-                
-                # 3. Объединение PDF (если нужно)
-                if settings.pdf.merge_generated_pdfs:
-                    pdf_merge_service = PdfMergeService(settings)
-                    pdf_merge_service.merge_pdfs(selected_items)
-                    
-            except Exception as e:
-                logging.error(f"Merge failed: {e}")
-            finally:
-                progress_callback(100, 100)
+        progress_callback(0, 100)
+        try:
+            if settings.pdf.export_sources or settings.pdf.export_excel_sources:
+                pdf_coordinator = PdfExportCoordinator(settings)
+                pdf_coordinator.export_sources_to_pdf(selected_items, log_service=logger)
+
+            word_items = [item for item in selected_items if item.source_kind == SourceKind.WORD]
+            merged_path = ""
+            if word_items:
+                merge_service = WordMergeService(settings)
+                merged_path = merge_service.merge_documents(word_items)
+
+            if settings.pdf.export_merged and merged_path:
+                pdf_service = PdfExportService(settings)
+                with WordApp() as word:
+                    if not word.app:
+                        raise RuntimeError("Word is not available for PDF export.")
+                    pdf_service.export_processed_copy(merged_path, word)
+
+            if settings.pdf.merge_generated_pdfs:
+                pdf_merge_service = PdfMergeService(settings)
+                result = pdf_merge_service.merge_pdfs(selected_items)
+                if not result.success:
+                    logging.error(f"PDF merge failed: {result.error_message}")
+
+        except Exception as e:
+            logging.error(f"Merge failed: {e}")
+        finally:
+            progress_callback(100, 100)
 
     def split_documents(
         self, settings: ToolSettings, progress_callback: Callable[[int, int], None]
@@ -114,3 +128,16 @@ class AppController:
                 logging.error(f"Split failed: {e}")
             finally:
                 progress_callback(100, 100)
+
+    @staticmethod
+    def _word_processing_requested(settings: ToolSettings) -> bool:
+        return any(
+            [
+                settings.source_processing.accept_revisions,
+                settings.source_processing.disable_track_changes,
+                settings.source_processing.remove_comments,
+                settings.page_numbering.enabled,
+                settings.footnotes.enabled,
+                settings.pdf.export_processed_copies,
+            ]
+        )

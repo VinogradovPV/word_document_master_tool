@@ -32,5 +32,6 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 markers = [
     "windows_word: requires Windows and Microsoft Word COM automation",
+    "windows_excel: requires Windows and Microsoft Excel COM automation",
     "gui: Tkinter GUI tests",
 ]

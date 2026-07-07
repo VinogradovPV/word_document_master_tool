@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 
-from ..core.models import DocumentItem, DocumentStatus, ToolSettings
+from ..core.models import DocumentItem, DocumentStatus, SourceKind, ToolSettings
 from .superscript_scanner import SuperscriptScanner
 from .word_app import WordApp
 
@@ -25,7 +25,7 @@ class SourceProcessingService:
                 return
 
             for item in items:
-                if not item.is_selected:
+                if not item.is_selected or item.source_kind != SourceKind.WORD:
                     continue
 
                 try:
@@ -45,23 +45,22 @@ class SourceProcessingService:
                     # 3. Применяем настройки обработки
                     if self.settings.source_processing.accept_revisions:
                         doc.Revisions.AcceptAll()
-                    
+
                     if self.settings.source_processing.disable_track_changes:
                         doc.TrackRevisions = False
-                    
+
                     if self.settings.source_processing.remove_comments:
                         # wdDeleteAllComments = 0
                         doc.DeleteAllComments()
 
                     # 4. Сканируем на надстрочные знаки
                     superscript_pages = self.scanner.scan_document(
-                        doc, 
-                        first_page_number=item.start_page_number or 1
+                        doc, first_page_number=item.start_page_number or 1
                     )
 
                     # 5. Сохраняем и закрываем
                     doc.Save()
-                    
+
                     # 6. Экспорт в PDF если нужно
                     if self.settings.pdf.export_processed_copies:
                         pdf_name = os.path.splitext(temp_name)[0] + ".pdf"
@@ -73,9 +72,9 @@ class SourceProcessingService:
 
                     if log_service:
                         log_service.log_item(
-                            item, 
-                            superscript_pages=superscript_pages, 
-                            message="Обработанная копия создана"
+                            item,
+                            superscript_pages=superscript_pages,
+                            message="Обработанная копия создана",
                         )
 
                 except Exception as e:

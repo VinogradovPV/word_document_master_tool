@@ -6,9 +6,12 @@ from .models import ToolSettings
 @dataclass
 class ExecutionPlan:
     selected_count: int
+    word_count: int | None
+    excel_count: int
     creates_merged_word: bool
     creates_processed_copies: bool
     pdf_sources: bool
+    pdf_excel_sources: bool
     pdf_processed_copies: bool
     pdf_merged_document: bool
     pdf_combined: bool
@@ -19,9 +22,12 @@ class ExecutionPlan:
     def lines(self) -> list[str]:
         return [
             f"Документов выбрано: {self.selected_count}",
+            f"Word-файлов выбрано: {self._count_or_dash(self.word_count)}",
+            f"Excel-файлов выбрано: {self.excel_count}",
             f"Будет создан итоговый Word: {self._yes_no(self.creates_merged_word)}",
             f"Будут созданы обработанные копии: {self._yes_no(self.creates_processed_copies)}",
             f"PDF исходников без изменений: {self._yes_no(self.pdf_sources)}",
+            f"PDF из Excel: {self._yes_no(self.pdf_excel_sources)}",
             f"PDF обработанных копий: {self._yes_no(self.pdf_processed_copies)}",
             f"PDF итогового документа: {self._yes_no(self.pdf_merged_document)}",
             f"Общий PDF из созданных PDF: {self._yes_no(self.pdf_combined)}",
@@ -40,11 +46,17 @@ class ExecutionPlan:
     def _join_or_dash(items: list[str]) -> str:
         return "; ".join(items) if items else "-"
 
+    @staticmethod
+    def _count_or_dash(value: int | None) -> str:
+        return str(value) if value is not None else "-"
+
 
 def build_execution_plan(
     settings: ToolSettings,
     selected_count: int,
     *,
+    word_count: int | None = None,
+    excel_count: int = 0,
     word_available: bool | None = None,
 ) -> ExecutionPlan:
     creates_merged_word = settings.pdf.export_merged or bool(settings.output_file_name)
@@ -60,16 +72,19 @@ def build_execution_plan(
     )
     plan = ExecutionPlan(
         selected_count=selected_count,
+        word_count=word_count,
+        excel_count=excel_count,
         creates_merged_word=creates_merged_word,
         creates_processed_copies=creates_processed_copies,
         pdf_sources=settings.pdf.export_sources,
+        pdf_excel_sources=settings.pdf.export_excel_sources,
         pdf_processed_copies=settings.pdf.export_processed_copies,
         pdf_merged_document=settings.pdf.export_merged,
         pdf_combined=settings.pdf.merge_generated_pdfs,
     )
 
     _append_operations(plan, settings)
-    _append_errors(plan, settings, selected_count, word_available)
+    _append_errors(plan, settings, selected_count, word_count, word_available)
     _append_warnings(plan, settings)
     return plan
 
@@ -77,6 +92,8 @@ def build_execution_plan(
 def _append_operations(plan: ExecutionPlan, settings: ToolSettings) -> None:
     if settings.pdf.export_sources:
         plan.operations.append("PDF исходников")
+    if settings.pdf.export_excel_sources:
+        plan.operations.append("PDF из Excel")
     if settings.pdf.export_processed_copies:
         plan.operations.append("PDF обработанных копий")
     if settings.pdf.export_merged:
@@ -93,6 +110,7 @@ def _append_errors(
     plan: ExecutionPlan,
     settings: ToolSettings,
     selected_count: int,
+    word_count: int | None,
     word_available: bool | None,
 ) -> None:
     if not settings.source_folder:
@@ -105,6 +123,7 @@ def _append_errors(
     pdf_requested = any(
         [
             settings.pdf.export_sources,
+            settings.pdf.export_excel_sources,
             settings.pdf.export_processed_copies,
             settings.pdf.export_merged,
             settings.pdf.merge_generated_pdfs,
@@ -114,6 +133,7 @@ def _append_errors(
         plan.errors.append("Не указана папка PDF.")
     if settings.pdf.merge_generated_pdfs and not (
         settings.pdf.export_sources
+        or settings.pdf.export_excel_sources
         or settings.pdf.export_processed_copies
         or settings.pdf.export_merged
     ):
@@ -130,6 +150,8 @@ def _append_errors(
             settings.pdf.export_merged,
         ]
     )
+    if word_count == 0:
+        word_required = False
     if word_available is False and word_required:
         plan.errors.append("Microsoft Word COM недоступен.")
 
@@ -147,6 +169,12 @@ def _append_warnings(plan: ExecutionPlan, settings: ToolSettings) -> None:
         )
     if settings.pdf.export_processed_copies and not plan.creates_processed_copies:
         plan.warnings.append("PDF обработанных копий требует создания обработанных копий.")
+    if plan.excel_count > 0:
+        plan.warnings.append(
+            "Excel-файлы участвуют только в PDF-экспорте; Word-настройки к ним не применяются."
+        )
+        if not settings.pdf.export_excel_sources:
+            plan.warnings.append("PDF из Excel выключен, выбранные Excel-файлы будут пропущены.")
     if settings.markers.removal_mode == 2:
         plan.warnings.append("Полное удаление маркеров может изменить документы.")
     plan.warnings.extend(settings.validate_warnings())

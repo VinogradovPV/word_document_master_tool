@@ -10,6 +10,11 @@ class DocumentStatus(Enum):
     ERROR = "ERROR"
 
 
+class SourceKind(Enum):
+    WORD = "word"
+    EXCEL = "excel"
+
+
 @dataclass
 class DocumentItem:
     order_index: int
@@ -18,6 +23,7 @@ class DocumentItem:
     extension: str
     size_bytes: int
     modified_at: datetime
+    source_kind: SourceKind = SourceKind.WORD
     is_selected: bool = True
     is_valid: bool = True
     status: DocumentStatus = DocumentStatus.OK
@@ -92,6 +98,7 @@ class FootnoteSettings:
 class PdfSettings:
     export_merged: bool = False
     export_sources: bool = False
+    export_excel_sources: bool = False
     export_processed_copies: bool = False
     merge_generated_pdfs: bool = False
     output_folder: str = ""
@@ -129,11 +136,11 @@ class ToolSettings:
         Проверяет настройки на критические ошибки.
         """
         errors = []
-        
+
         # 1. Проверка папок
         if not self.output_folder:
             errors.append("Папка для сохранения результатов не указана.")
-        
+
         if self.source_folder and self.output_folder:
             src = os.path.abspath(self.source_folder)
             out = os.path.abspath(self.output_folder)
@@ -146,12 +153,15 @@ class ToolSettings:
                 errors.append("Начальный номер страницы должен быть >= 1.")
             if self.page_numbering.font_size <= 0:
                 errors.append("Размер шрифта нумерации должен быть больше 0.")
-            if any(m < 0 for m in [
-                self.page_numbering.top_margin_cm,
-                self.page_numbering.bottom_margin_cm,
-                self.page_numbering.left_margin_cm,
-                self.page_numbering.right_margin_cm
-            ]):
+            if any(
+                m < 0
+                for m in [
+                    self.page_numbering.top_margin_cm,
+                    self.page_numbering.bottom_margin_cm,
+                    self.page_numbering.left_margin_cm,
+                    self.page_numbering.right_margin_cm,
+                ]
+            ):
                 errors.append("Поля страницы не могут быть отрицательными.")
             if self.page_numbering.continuous and self.page_numbering.restart_each_document:
                 errors.append("Сквозная нумерация страниц и сброс в каждом документе несовместимы.")
@@ -174,10 +184,13 @@ class ToolSettings:
 
         # 4. PDF
         if self.pdf.merge_generated_pdfs and not (
-            self.pdf.export_sources or self.pdf.export_processed_copies
+            self.pdf.export_sources
+            or self.pdf.export_excel_sources
+            or self.pdf.export_processed_copies
+            or self.pdf.export_merged
         ):
             errors.append("Слияние PDF невозможно без включенного экспорта отдельных PDF.")
-        
+
         if self.pdf.optimize_for_print and self.pdf.optimize_for_screen:
             errors.append("Выберите только один режим оптимизации PDF (печать или экран).")
 
@@ -188,17 +201,19 @@ class ToolSettings:
         Проверяет настройки на предупреждения.
         """
         warnings = []
-        if self.pdf.export_processed_copies and not any([
-            self.source_processing.accept_revisions,
-            self.source_processing.remove_comments,
-            self.page_numbering.enabled,
-            self.footnotes.enabled
-        ]):
+        if self.pdf.export_processed_copies and not any(
+            [
+                self.source_processing.accept_revisions,
+                self.source_processing.remove_comments,
+                self.page_numbering.enabled,
+                self.footnotes.enabled,
+            ]
+        ):
             warnings.append("Экспорт обработанных копий включен, но изменения в них не вносятся.")
-            
+
         if not self.output_file_name and self.pdf.export_merged:
             warnings.append("Имя итогового файла не указано, будет использовано имя по умолчанию.")
-            
+
         return warnings
 
     def validate(self) -> list[str]:

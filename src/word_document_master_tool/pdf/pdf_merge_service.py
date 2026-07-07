@@ -13,6 +13,7 @@ class PdfMergeResult:
     """
     Результат операции слияния PDF.
     """
+
     success: bool
     output_path: str = ""
     merged_count: int = 0
@@ -29,12 +30,17 @@ class PdfMergeService:
         Объединяет сгенерированные PDF файлы в один.
         """
         selected_items = [item for item in items if item.is_selected]
-        pdf_paths = [item.pdf_path for item in selected_items if item.pdf_path]
-        
+        pdf_paths = []
+        skipped_paths = []
+        for item in selected_items:
+            if item.pdf_path:
+                pdf_paths.append(item.pdf_path)
+            else:
+                skipped_paths.append(item.file_path)
+
         if not pdf_paths:
             return PdfMergeResult(
-                success=False,
-                error_message="Нет PDF для объединения"
+                success=False, skipped_paths=skipped_paths, error_message="Нет PDF для объединения"
             )
 
         output_folder = self.settings.pdf.output_folder or self.settings.output_folder
@@ -48,8 +54,6 @@ class PdfMergeService:
 
         writer = PdfWriter()
         merged_count = 0
-        skipped_paths = []
-
         try:
             for path in pdf_paths:
                 if os.path.exists(path):
@@ -61,8 +65,7 @@ class PdfMergeService:
 
             if merged_count == 0:
                 return PdfMergeResult(
-                    success=False, 
-                    error_message="Ни один из PDF-файлов не найден на диске."
+                    success=False, error_message="Ни один из PDF-файлов не найден на диске."
                 )
 
             with open(output_path, "wb") as f:
@@ -73,7 +76,7 @@ class PdfMergeService:
                 success=True,
                 output_path=output_path,
                 merged_count=merged_count,
-                skipped_paths=skipped_paths
+                skipped_paths=skipped_paths,
             )
 
         except Exception as e:
