@@ -4,6 +4,19 @@
 
 Документ фиксирует соответствие между референсной VBA-формой `Word Document Master Tool v1.1` и текущим Python/Tkinter GUI.
 
+Текущий GUI организован через `ttk.Notebook` с вкладками:
+
+- `Главное`
+- `Документы`
+- `Обработка`
+- `Нумерация страниц`
+- `PDF`
+- `Маркеры`
+- `Сноски`
+- `Журнал`
+
+Нижняя панель действий находится вне вкладок и всегда видима.
+
 ## Статусы
 
 - implemented
@@ -15,13 +28,13 @@
 
 | VBA-блок | VBA-контрол / функция | Python GUI | Backend setting/service | Статус | Комментарий |
 |---|---|---|---|---|---|
-| Папки и результат | Исходная папка | `FolderSelectWidget` в `MainWindow` | `ToolSettings.source_folder`, `DocumentDiscovery` | partial | Папка используется для обновления списка, теперь передается в настройки. |
-| Папки и результат | Папка результата | `FolderSelectWidget` в `MainWindow` | `ToolSettings.output_folder` | implemented | Используется при обработке, объединении, логировании и PDF. |
-| Папки и результат | Имя файла | Поле `Имя файла` | `ToolSettings.output_file_name` | implemented | Значение передается из GUI в настройки. |
+| Папки и результат | Исходная папка | Вкладка `Главное`, `FolderSelectWidget` | `ToolSettings.source_folder`, `DocumentDiscovery` | partial | Папка используется для обновления списка и передается в настройки. |
+| Папки и результат | Папка результата | Вкладка `Главное`, `FolderSelectWidget` | `ToolSettings.output_folder` | implemented | Используется при обработке, объединении, логировании и PDF. |
+| Папки и результат | Имя файла | Вкладка `Главное`, поле `Имя файла` | `ToolSettings.output_file_name` | implemented | Значение передается из GUI в настройки. |
 | Папки и результат | Обзор исходной папки | Кнопка `Обзор...` | `FolderSelectWidget._browse` | implemented | Реализовано через `filedialog.askdirectory`. |
 | Папки и результат | Обзор папки результата | Кнопка `Обзор...` | `FolderSelectWidget._browse` | implemented | Реализовано через общий виджет выбора папки. |
 | Папки и результат | Обновить список | Кнопка `Обновить список` | `DocumentDiscovery.find_documents` | implemented | Ищет `.docx`, `.docm`, `.doc`, `.rtf`. |
-| Документы | Колонка `Вкл` | Колонка `Вкл` | `DocumentItem.is_selected` | implemented | Показывает `Да`/`Нет`; переключается кнопками и двойным кликом. |
+| Документы | Колонка `Вкл` | Вкладка `Документы`, колонка `Вкл` | `DocumentItem.is_selected` | implemented | Показывает `Да`/`Нет`; переключается кнопками и двойным кликом по колонке. |
 | Документы | Колонка `Файл` | Колонка `Файл` | `DocumentItem.file_name` | implemented | Отображается в `DocumentTableWidget`. |
 | Документы | Колонка `Тип` | Колонка `Тип` | `DocumentItem.extension` | implemented | Отображается расширение документа. |
 | Документы | Колонка `Размер` | Колонка `Размер` | `DocumentItem.size_bytes` | implemented | Отображается человекочитаемый размер. |
@@ -92,9 +105,9 @@
 | Сноски и концевые сноски | Концевые | Чекбокс | `FootnoteSettings.process_endnotes` | implemented | Значение передается в настройки. |
 | Сноски и концевые сноски | Поля | Чекбокс | `FootnoteSettings.update_fields` | implemented | Значение передается в настройки. |
 | Сноски и концевые сноски | Не заменять номера текстом | Чекбокс | `FootnoteSettings.do_not_replace_numbers_with_text` | implemented | Настройка добавлена в модель состояния. |
-| Статус и действия | Статус | Label `Статус` | GUI runtime status | implemented | Показывает текущее состояние GUI-действий. |
-| Статус и действия | Лог / прогресс | Text log и Progressbar | `ProcessingLogger`, `setup_application_logging` | implemented | GUI-log дополняет TSV/application logs. |
-| Статус и действия | Обработать файлы | Кнопка `Обработать файлы` | `SourceProcessingService` | partial | Кнопка есть, требуется проверка полного сценария. |
-| Статус и действия | Объединить | Кнопка `Объединить` | `WordMergeService` | partial | Кнопка есть, зависит от Word COM и настроек. |
-| Статус и действия | Сбросить | Кнопка `Сбросить` | `GuiState.clear_documents` | implemented | Очищает таблицу и progressbar. |
-| Статус и действия | Закрыть | Кнопка `Закрыть` | Tk root destroy | implemented | Закрывает окно приложения. |
+| Статус и действия | Статус | Нижняя панель, label `Статус` | GUI runtime status | implemented | Панель всегда видима вне `Notebook`. |
+| Статус и действия | Лог / прогресс | Вкладка `Журнал`, нижний Progressbar | `ProcessingLogger`, `setup_application_logging` | implemented | GUI-журнал дополняет TSV/application logs. |
+| Статус и действия | Обработать файлы | Нижняя панель, кнопка `Обработать файлы` | `SourceProcessingService` | partial | Кнопка есть, требуется проверка полного сценария. |
+| Статус и действия | Объединить | Нижняя панель, кнопка `Объединить` | `WordMergeService` | partial | Кнопка есть, зависит от Word COM и настроек. |
+| Статус и действия | Сбросить | Нижняя панель, кнопка `Сбросить` | `GuiState.clear_documents` | implemented | Очищает таблицу и progressbar. |
+| Статус и действия | Закрыть | Нижняя панель, кнопка `Закрыть` | Tk root destroy | implemented | Закрывает окно приложения. |
