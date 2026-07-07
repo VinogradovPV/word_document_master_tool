@@ -10,6 +10,9 @@ class DocumentTableWidget(ttk.Frame):
         super().__init__(master)
         self.state = state
         self.on_change = on_change
+        self.filter_text = ""
+        self.filter_mode = "all"
+        self._visible_document_indices: list[int] = []
         self._create_widgets()
 
     def _create_widgets(self):
@@ -47,23 +50,41 @@ class DocumentTableWidget(ttk.Frame):
             return
         
         idx = self.tree.index(item_id)
-        if 0 <= idx < len(self.state.documents):
-            doc = self.state.documents[idx]
+        if 0 <= idx < len(self._visible_document_indices):
+            doc = self.state.documents[self._visible_document_indices[idx]]
             doc.is_selected = not doc.is_selected
             self.sync_with_state()
             self._notify_change()
 
     def selected_indices(self) -> list[int]:
-        """Возвращает индексы строк, выделенных в Treeview."""
-        return [self.tree.index(item_id) for item_id in self.tree.selection()]
+        """Возвращает индексы выбранных документов в GuiState."""
+        indices = []
+        for item_id in self.tree.selection():
+            visible_index = self.tree.index(item_id)
+            if 0 <= visible_index < len(self._visible_document_indices):
+                indices.append(self._visible_document_indices[visible_index])
+        return indices
+
+    def set_filter(self, text: str = "", mode: str = "all") -> None:
+        self.filter_text = text.lower().strip()
+        self.filter_mode = mode
+        self.sync_with_state()
 
     def sync_with_state(self):
         """Синхронизирует Treeview с GuiState."""
         # Сохраняем выделение
-        selected_indices = [self.tree.index(i) for i in self.tree.selection()]
+        selected_state_indices = []
+        for item_id in self.tree.selection():
+            visible_index = self.tree.index(item_id)
+            if 0 <= visible_index < len(self._visible_document_indices):
+                selected_state_indices.append(self._visible_document_indices[visible_index])
         
         self.tree.delete(*self.tree.get_children())
-        for doc in self.state.documents:
+        self._visible_document_indices = []
+        for state_index, doc in enumerate(self.state.documents):
+            if not self._matches_filter(doc):
+                continue
+            self._visible_document_indices.append(state_index)
             tag = "selected" if doc.is_selected else "unselected"
             self.tree.insert(
                 "",
@@ -84,9 +105,11 @@ class DocumentTableWidget(ttk.Frame):
         
         # Восстанавливаем выделение
         children = self.tree.get_children()
-        for idx in selected_indices:
-            if idx < len(children):
-                self.tree.selection_add(children[idx])
+        for state_index in selected_state_indices:
+            if state_index in self._visible_document_indices:
+                visible_index = self._visible_document_indices.index(state_index)
+                if visible_index < len(children):
+                    self.tree.selection_add(children[visible_index])
 
     def _notify_change(self) -> None:
         if self.on_change is not None:
@@ -99,3 +122,10 @@ class DocumentTableWidget(ttk.Frame):
         if size_bytes < 1024 * 1024:
             return f"{size_bytes / 1024:.1f} KB"
         return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+    def _matches_filter(self, doc) -> bool:
+        if self.filter_text and self.filter_text not in doc.file_name.lower():
+            return False
+        if self.filter_mode == "selected" and not doc.is_selected:
+            return False
+        return not (self.filter_mode == "errors" and doc.status.value != "ERROR")

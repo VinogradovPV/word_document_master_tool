@@ -2,6 +2,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+from ..core.execution_plan import ExecutionPlan, build_execution_plan
 from ..core.models import DocumentStatus, ToolSettings
 from ..filesystem.discovery import DocumentDiscovery
 from .controller import AppController
@@ -31,6 +32,13 @@ FOOTNOTE_MODES = (
     "Заново в документе",
     "Заново в секции",
 )
+WORKFLOW_PROFILES = (
+    "Только PDF исходников без изменений",
+    "Объединить Word-документы",
+    "Обработанные копии",
+    "Полная обработка",
+    "Пользовательский режим",
+)
 
 
 class MainWindow(ttk.Frame):
@@ -51,32 +59,30 @@ class MainWindow(ttk.Frame):
 
         self.tab_main = ttk.Frame(self.notebook)
         self.tab_documents = ttk.Frame(self.notebook)
-        self.tab_processing = ttk.Frame(self.notebook)
-        self.tab_page_numbering = ttk.Frame(self.notebook)
+        self.tab_word = ttk.Frame(self.notebook)
+        self.tab_numbering = ttk.Frame(self.notebook)
         self.tab_pdf = ttk.Frame(self.notebook)
-        self.tab_markers = ttk.Frame(self.notebook)
-        self.tab_footnotes = ttk.Frame(self.notebook)
+        self.tab_split = ttk.Frame(self.notebook)
         self.tab_journal = ttk.Frame(self.notebook)
 
         self.notebook.add(self.tab_main, text="Главное")
         self.notebook.add(self.tab_documents, text="Документы")
-        self.notebook.add(self.tab_processing, text="Обработка")
-        self.notebook.add(self.tab_page_numbering, text="Нумерация страниц")
+        self.notebook.add(self.tab_word, text="Word")
+        self.notebook.add(self.tab_numbering, text="Нумерация")
         self.notebook.add(self.tab_pdf, text="PDF")
-        self.notebook.add(self.tab_markers, text="Маркеры")
-        self.notebook.add(self.tab_footnotes, text="Сноски")
+        self.notebook.add(self.tab_split, text="Разделение")
         self.notebook.add(self.tab_journal, text="Журнал")
 
         self._create_main_tab()
         self._create_documents_tab()
-        self._create_processing_tab()
-        self._create_page_numbering_tab()
+        self._create_word_tab()
+        self._create_numbering_tab()
         self._create_pdf_tab()
-        self._create_markers_tab()
-        self._create_footnotes_tab()
+        self._create_split_tab()
         self._create_journal_tab()
         self._create_action_panel()
-        self._refresh_summary()
+        self._bind_workflow_refresh()
+        self._refresh_workflow_views()
 
     def _create_main_tab(self):
         folder_frame = ttk.LabelFrame(self.tab_main, text="Папки и результат")
@@ -101,8 +107,26 @@ class MainWindow(ttk.Frame):
             folder_frame, text="Обновить список", command=self._refresh_list
         ).pack(anchor="w", padx=5, pady=5)
 
+        scenario_frame = ttk.LabelFrame(self.tab_main, text="Сценарий работы")
+        scenario_frame.pack(fill="x", padx=10, pady=(0, 10))
+        ttk.Label(scenario_frame, text="Профиль / сценарий:").grid(
+            row=0, column=0, sticky="w", padx=5, pady=5
+        )
+        self.cmb_workflow_profile = ttk.Combobox(
+            scenario_frame, values=WORKFLOW_PROFILES, state="readonly"
+        )
+        self.cmb_workflow_profile.set("Пользовательский режим")
+        self.cmb_workflow_profile.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+        self.cmb_workflow_profile.bind("<<ComboboxSelected>>", self._apply_workflow_profile)
+        scenario_frame.columnconfigure(1, weight=1)
+
+        plan_frame = ttk.LabelFrame(self.tab_main, text="План выполнения")
+        plan_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        self.txt_execution_plan = tk.Text(plan_frame, height=9, wrap="word", state="disabled")
+        self.txt_execution_plan.pack(fill="both", expand=True, padx=5, pady=5)
+
         summary_frame = ttk.LabelFrame(self.tab_main, text="Сводка")
-        summary_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        summary_frame.pack(fill="x", padx=10, pady=(0, 10))
 
         self.lbl_summary_documents = ttk.Label(summary_frame, text="")
         self.lbl_summary_documents.pack(anchor="w", padx=8, pady=3)
@@ -113,9 +137,38 @@ class MainWindow(ttk.Frame):
         self.lbl_summary_log = ttk.Label(summary_frame, text="")
         self.lbl_summary_log.pack(anchor="w", padx=8, pady=3)
 
+        warning_frame = ttk.LabelFrame(self.tab_main, text="Основные предупреждения")
+        warning_frame.pack(fill="x", padx=10, pady=(0, 10))
+        ttk.Label(
+            warning_frame,
+            text=(
+                "Глобальные кнопки снизу учитывают настройки со всех вкладок. "
+                "PDF исходников без изменений не применяет исправления, нумерацию и сноски."
+            ),
+            wraplength=900,
+            foreground="firebrick",
+        ).pack(anchor="w", padx=8, pady=5)
+
     def _create_documents_tab(self):
         table_frame = ttk.LabelFrame(self.tab_documents, text="Документы")
         table_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        filter_frame = ttk.Frame(table_frame)
+        filter_frame.pack(fill="x", padx=5, pady=5)
+        ttk.Label(filter_frame, text="Фильтр по имени:").pack(side="left", padx=2)
+        self.ent_document_filter = ttk.Entry(filter_frame, width=30)
+        self.ent_document_filter.pack(side="left", fill="x", expand=True, padx=2)
+        self.ent_document_filter.bind("<KeyRelease>", self._apply_document_filter)
+        ttk.Label(filter_frame, text="Показать:").pack(side="left", padx=(8, 2))
+        self.cmb_document_filter_mode = ttk.Combobox(
+            filter_frame,
+            values=("все", "выбранные", "с ошибками"),
+            state="readonly",
+            width=14,
+        )
+        self.cmb_document_filter_mode.set("все")
+        self.cmb_document_filter_mode.pack(side="left", padx=2)
+        self.cmb_document_filter_mode.bind("<<ComboboxSelected>>", self._apply_document_filter)
 
         self.wdg_table = DocumentTableWidget(table_frame, self.state, self._update_counters)
         self.wdg_table.pack(fill="both", expand=True, padx=5, pady=5)
@@ -147,8 +200,21 @@ class MainWindow(ttk.Frame):
         self.lbl_counts = ttk.Label(buttons, text="Найдено: 0 | Выбрано: 0")
         self.lbl_counts.pack(side="right", padx=5)
 
-    def _create_processing_tab(self):
-        merge_frame = ttk.LabelFrame(self.tab_processing, text="Настройки объединения")
+    def _create_word_tab(self):
+        self._add_help_block(
+            self.tab_word,
+            "Как пользоваться вкладкой",
+            [
+                "Назначение: настраивает создание итогового Word-документа и обработку копий.",
+                "Как используется: эти параметры учитываются нижними глобальными кнопками.",
+                (
+                    "Безопасность: исходные документы не должны пересохраняться; "
+                    "изменения применяются к итоговому документу или обработанным копиям."
+                ),
+            ],
+        )
+
+        merge_frame = ttk.LabelFrame(self.tab_word, text="Настройки объединения")
         merge_frame.pack(fill="x", padx=10, pady=10)
         merge_frame.columnconfigure(1, weight=1)
         merge_frame.columnconfigure(3, weight=1)
@@ -186,7 +252,7 @@ class MainWindow(ttk.Frame):
             merge_frame, text="Создать backup", variable=self.var_create_backup
         ).grid(row=1, column=3, sticky="w", padx=5, pady=2)
 
-        source_frame = ttk.LabelFrame(self.tab_processing, text="Исправления и комментарии")
+        source_frame = ttk.LabelFrame(self.tab_word, text="Исправления и комментарии")
         source_frame.pack(fill="x", padx=10, pady=(0, 10))
 
         self.var_accept_revisions = tk.BooleanVar(value=True)
@@ -212,8 +278,24 @@ class MainWindow(ttk.Frame):
             variable=self.var_warn_protected_docs,
         ).grid(row=1, column=1, sticky="w", padx=5, pady=2)
 
-    def _create_page_numbering_tab(self):
-        page_frame = ttk.LabelFrame(self.tab_page_numbering, text="Нумерация страниц")
+        ttk.Label(
+            self.tab_word,
+            text='Эти настройки не применяются к режиму "PDF исходников без изменений".',
+            foreground="firebrick",
+        ).pack(anchor="w", padx=18, pady=(0, 10))
+
+    def _create_numbering_tab(self):
+        self._add_help_block(
+            self.tab_numbering,
+            "Как пользоваться вкладкой",
+            [
+                "Назначение: настраивает нумерацию страниц, обычных и концевых сносок.",
+                "Как используется: обычно применяется к обработанным копиям или итоговому Word.",
+                'Важно: не применяется к режиму "PDF исходников без изменений".',
+            ],
+        )
+
+        page_frame = ttk.LabelFrame(self.tab_numbering, text="Нумерация страниц")
         page_frame.pack(fill="x", padx=10, pady=10)
         for column in (1, 3, 5):
             page_frame.columnconfigure(column, weight=1)
@@ -294,7 +376,30 @@ class MainWindow(ttk.Frame):
         self.spn_margin_left = self._add_margin_spinbox(page_frame, "Лево:", 4, 3)
         self.spn_margin_right = self._add_margin_spinbox(page_frame, "Право:", 4, 4)
 
+        self._create_footnotes_block(self.tab_numbering)
+
+        preview_frame = ttk.LabelFrame(self.tab_numbering, text="Предпросмотр настроек")
+        preview_frame.pack(fill="x", padx=10, pady=(0, 10))
+        self.lbl_numbering_preview = ttk.Label(preview_frame, text="", wraplength=900)
+        self.lbl_numbering_preview.pack(anchor="w", padx=8, pady=5)
+
     def _create_pdf_tab(self):
+        self._add_help_block(
+            self.tab_pdf,
+            "Как пользоваться вкладкой",
+            [
+                "Назначение: настраивает создание PDF-файлов.",
+                (
+                    "Как используется: параметры применяются при нажатии нижней "
+                    "глобальной кнопки выполнения операций."
+                ),
+                (
+                    "Важно: PDF исходников без изменений открывает исходники только "
+                    "для чтения и закрывает без сохранения."
+                ),
+            ],
+        )
+
         pdf_frame = ttk.LabelFrame(self.tab_pdf, text="PDF-экспорт")
         pdf_frame.pack(fill="x", padx=10, pady=10)
         pdf_frame.columnconfigure(1, weight=1)
@@ -350,8 +455,40 @@ class MainWindow(ttk.Frame):
             pdf_frame, text="Свойства", variable=self.var_pdf_properties
         ).grid(row=3, column=2, sticky="w", padx=5, pady=2)
 
-    def _create_markers_tab(self):
-        markers_frame = ttk.LabelFrame(self.tab_markers, text="Маркеры и разделение")
+        warning_frame = ttk.LabelFrame(self.tab_pdf, text="Предупреждения")
+        warning_frame.pack(fill="x", padx=10, pady=(0, 10))
+        ttk.Label(
+            warning_frame,
+            text=(
+                "PDF исходников без изменений не применяет исправления, нумерацию, "
+                "сноски и другие изменения.\n"
+                "PDF обработанных копий требует создания обработанных копий.\n"
+                "Общий PDF создаётся только из уже созданных отдельных PDF через pypdf."
+            ),
+            wraplength=900,
+            foreground="firebrick",
+        ).pack(anchor="w", padx=8, pady=5)
+
+        result_frame = ttk.LabelFrame(self.tab_pdf, text="Итог PDF-настроек")
+        result_frame.pack(fill="x", padx=10, pady=(0, 10))
+        self.lbl_pdf_result = ttk.Label(result_frame, text="", wraplength=900)
+        self.lbl_pdf_result.pack(anchor="w", padx=8, pady=5)
+
+    def _create_split_tab(self):
+        self._add_help_block(
+            self.tab_split,
+            "Как пользоваться вкладкой",
+            [
+                "Назначение: добавляет, удаляет маркеры частей и разделяет документы.",
+                (
+                    "Когда использовать: после подготовки объединённого документа "
+                    "или разделения на части."
+                ),
+                "Безопасность: удаление маркеров может изменить документ, рекомендуется backup.",
+            ],
+        )
+
+        markers_frame = ttk.LabelFrame(self.tab_split, text="Маркеры и разделение")
         markers_frame.pack(fill="x", padx=10, pady=10)
         markers_frame.columnconfigure(1, weight=1)
         markers_frame.columnconfigure(3, weight=1)
@@ -397,8 +534,8 @@ class MainWindow(ttk.Frame):
             foreground="firebrick",
         ).grid(row=2, column=0, columnspan=3, sticky="w", padx=5, pady=2)
 
-    def _create_footnotes_tab(self):
-        footnote_frame = ttk.LabelFrame(self.tab_footnotes, text="Сноски и концевые сноски")
+    def _create_footnotes_block(self, parent):
+        footnote_frame = ttk.LabelFrame(parent, text="Сноски и концевые сноски")
         footnote_frame.pack(fill="x", padx=10, pady=10)
         footnote_frame.columnconfigure(1, weight=1)
         footnote_frame.columnconfigure(3, weight=1)
@@ -478,14 +615,25 @@ class MainWindow(ttk.Frame):
         ttk.Button(
             buttons, text="Копировать диагностику", command=self._copy_diagnostics
         ).pack(side="left", padx=2)
+        ttk.Button(
+            buttons, text="Копировать план выполнения", command=self._copy_execution_plan
+        ).pack(side="left", padx=2)
 
     def _create_action_panel(self):
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=8, pady=(4, 8))
 
-        self.lbl_status = ttk.Label(action_frame, text="Статус: готово")
+        ttk.Label(
+            action_frame,
+            text="Глобальные действия: применяют настройки со всех вкладок.",
+        ).pack(side="top", anchor="w", fill="x", padx=5, pady=2)
+
+        self.lbl_status = ttk.Label(action_frame, text="Готово")
         self.lbl_status.pack(side="top", anchor="w", fill="x", padx=5, pady=2)
 
+        ttk.Label(action_frame, text="Прогресс операции").pack(
+            side="top", anchor="w", fill="x", padx=5, pady=(2, 0)
+        )
         self.progress = ttk.Progressbar(action_frame, orient="horizontal", mode="determinate")
         self.progress.pack(side="top", fill="x", expand=True, padx=5, pady=2)
 
@@ -496,10 +644,16 @@ class MainWindow(ttk.Frame):
             side="left", padx=5
         )
         self.btn_process = ttk.Button(
-            buttons, text="Обработать файлы", command=self._on_process_files
+            buttons,
+            text="Выполнить выбранные операции",
+            command=self._on_process_files,
         )
         self.btn_process.pack(side="right", padx=5)
-        self.btn_merge = ttk.Button(buttons, text="Объединить", command=self._on_merge_documents)
+        self.btn_merge = ttk.Button(
+            buttons,
+            text="Объединить Word-документы",
+            command=self._on_merge_documents,
+        )
         self.btn_merge.pack(side="right", padx=5)
 
     def _refresh_list(self):
@@ -517,19 +671,18 @@ class MainWindow(ttk.Frame):
         self._append_log(f"Список документов обновлен: {len(files)}")
 
     def _move_item(self, direction: int):
-        selected = self.wdg_table.tree.selection()
-        if not selected:
+        selected_indices = self.wdg_table.selected_indices()
+        if not selected_indices:
             return
 
-        idx = self.wdg_table.tree.index(selected[0])
+        idx = selected_indices[0]
         new_idx = idx + direction
 
         if 0 <= new_idx < len(self.state.documents):
             docs = self.state.documents
             docs[idx], docs[new_idx] = docs[new_idx], docs[idx]
             self.wdg_table.sync_with_state()
-            children = self.wdg_table.tree.get_children()
-            self.wdg_table.tree.selection_set(children[new_idx])
+            self._update_counters()
 
     def _check_documents(self):
         for doc in self.state.documents:
@@ -543,6 +696,17 @@ class MainWindow(ttk.Frame):
         self._update_counters()
         self._set_status("Проверка документов завершена")
         self._append_log("Проверка документов завершена")
+
+    def _apply_document_filter(self, _event=None):
+        mode_map = {
+            "все": "all",
+            "выбранные": "selected",
+            "с ошибками": "errors",
+        }
+        self.wdg_table.set_filter(
+            self.ent_document_filter.get(),
+            mode_map.get(self.cmb_document_filter_mode.get(), "all"),
+        )
 
     def _enable_selected(self):
         self._set_selected_documents_enabled(True)
@@ -671,9 +835,7 @@ class MainWindow(ttk.Frame):
 
     def _on_process_files(self):
         settings = self._get_current_settings()
-        errors = settings.validate_errors()
-        if errors:
-            messagebox.showerror("Ошибка настроек", "\n".join(errors))
+        if not self._validate_before_run(settings):
             return
 
         self.btn_process.config(state="disabled")
@@ -686,6 +848,9 @@ class MainWindow(ttk.Frame):
 
     def _on_merge_documents(self):
         settings = self._get_current_settings()
+        if not self._validate_before_run(settings):
+            return
+
         self.btn_merge.config(state="disabled")
         self._set_status("Объединение документов...")
         self._append_log("Запущено объединение документов")
@@ -696,6 +861,9 @@ class MainWindow(ttk.Frame):
 
     def _on_split_documents(self):
         settings = self._get_current_settings()
+        if not self._validate_before_run(settings):
+            return
+
         self._set_status("Разделение по маркерам...")
         self._append_log("Запущено разделение по маркерам")
         self.controller.run_in_thread(
@@ -736,7 +904,7 @@ class MainWindow(ttk.Frame):
 
     def _set_status(self, message: str):
         self.last_operation = message
-        self.lbl_status.config(text=f"Статус: {message}")
+        self.lbl_status.config(text=self._status_text(message))
         self._refresh_summary()
 
     def _append_log(self, message: str):
@@ -747,21 +915,30 @@ class MainWindow(ttk.Frame):
         self._refresh_summary(last_log=message)
 
     def _refresh_summary(self, last_log: str | None = None):
+        self._refresh_workflow_views(last_log)
+
+    def _refresh_workflow_views(self, last_log: str | None = None):
         if not hasattr(self, "lbl_summary_documents"):
             return
         total = len(self.state.documents)
         selected = self.state.selected_count()
+        settings = self._get_current_settings()
+        plan = build_execution_plan(settings, selected)
         pdf_modes = []
-        if hasattr(self, "var_pdf_sources") and self.var_pdf_sources.get():
+        if settings.pdf.export_sources:
             pdf_modes.append("исходники")
-        if hasattr(self, "var_pdf_merged") and self.var_pdf_merged.get():
+        if settings.pdf.export_merged:
             pdf_modes.append("итоговый")
-        if hasattr(self, "var_pdf_processed") and self.var_pdf_processed.get():
+        if settings.pdf.export_processed_copies:
             pdf_modes.append("обработанные копии")
         self.lbl_summary_documents.config(text=f"Документы: найдено {total}, выбрано {selected}")
         self.lbl_summary_pdf.config(text=f"PDF-режимы: {', '.join(pdf_modes) or '-'}")
         self.lbl_summary_operation.config(text=f"Последняя операция: {self.last_operation}")
         self.lbl_summary_log.config(text=f"Последний лог: {last_log or '-'}")
+        self._set_text(self.txt_execution_plan, plan.summary_text())
+        self.lbl_numbering_preview.config(text=self._numbering_preview(settings))
+        self.lbl_pdf_result.config(text=self._pdf_result_text(settings))
+        self.lbl_status.config(text=self._status_text(self.last_operation, plan))
 
     def _open_log_file(self):
         if self.last_log_path and os.path.exists(self.last_log_path):
@@ -794,6 +971,136 @@ class MainWindow(ttk.Frame):
         self.clipboard_append("\n".join(diagnostics))
         self._set_status("Диагностика скопирована")
 
+    def _copy_execution_plan(self):
+        plan = self._build_current_plan()
+        self.clipboard_clear()
+        self.clipboard_append(plan.summary_text())
+        self._set_status("План выполнения скопирован")
+
+    def _apply_workflow_profile(self, _event=None):
+        profile = self.cmb_workflow_profile.get()
+        if profile == "Только PDF исходников без изменений":
+            self.var_pdf_sources.set(True)
+            self.var_pdf_merged.set(False)
+            self.var_pdf_processed.set(False)
+            self.var_pdf_merge_generated.set(False)
+            self.var_accept_revisions.set(False)
+            self.var_disable_track_changes.set(False)
+            self.var_remove_comments.set(False)
+            self.var_page_numbering_enabled.set(False)
+            self.var_footnotes_enabled.set(False)
+        elif profile == "Объединить Word-документы":
+            self.var_pdf_sources.set(False)
+            self.var_pdf_merged.set(False)
+            self.var_pdf_processed.set(False)
+            self.var_pdf_merge_generated.set(False)
+        elif profile == "Обработанные копии":
+            self.var_accept_revisions.set(True)
+            self.var_disable_track_changes.set(True)
+            self.var_pdf_processed.set(True)
+        elif profile == "Полная обработка":
+            self.var_pdf_sources.set(True)
+            self.var_pdf_merged.set(True)
+            self.var_pdf_processed.set(True)
+            self.var_pdf_merge_generated.set(True)
+            self.var_accept_revisions.set(True)
+            self.var_disable_track_changes.set(True)
+            self.var_page_numbering_enabled.set(True)
+        else:
+            self._set_status("Пользовательский режим: настройки меняются вручную")
+            self._append_log("Выбран пользовательский режим")
+            return
+        self._set_status(f"Применён профиль: {profile}")
+        self._append_log(f"Применён профиль: {profile}")
+        self._refresh_workflow_views()
+
+    def _validate_before_run(self, settings: ToolSettings) -> bool:
+        plan = build_execution_plan(settings, self.state.selected_count())
+        if plan.errors:
+            messagebox.showerror(
+                "Нельзя выполнить операцию",
+                "Нельзя выполнить операцию:\n- " + "\n- ".join(plan.errors),
+            )
+            self._set_status("Есть ошибки в плане выполнения")
+            return False
+        if plan.warnings:
+            messagebox.showwarning(
+                "Предупреждения",
+                "Предупреждения:\n- " + "\n- ".join(plan.warnings),
+            )
+        return True
+
+    def _build_current_plan(self) -> ExecutionPlan:
+        return build_execution_plan(self._get_current_settings(), self.state.selected_count())
+
+    def _bind_workflow_refresh(self):
+        variables = [
+            self.var_pdf_merged,
+            self.var_pdf_sources,
+            self.var_pdf_processed,
+            self.var_pdf_merge_generated,
+            self.var_page_numbering_enabled,
+            self.var_footnotes_enabled,
+            self.var_accept_revisions,
+            self.var_disable_track_changes,
+            self.var_remove_comments,
+            self.var_use_markers,
+        ]
+        for variable in variables:
+            variable.trace_add("write", lambda *_args: self._refresh_workflow_views())
+        for combobox in [
+            self.cmb_page_numbering_mode,
+            self.cmb_header_footer_mode,
+            self.cmb_page_location,
+            self.cmb_page_alignment,
+            self.cmb_page_format,
+            self.cmb_footnote_mode,
+            self.cmb_footnote_format,
+            self.cmb_pdf_quality,
+        ]:
+            combobox.bind("<<ComboboxSelected>>", lambda _event: self._refresh_workflow_views())
+
+    def _status_text(self, message: str, plan: ExecutionPlan | None = None) -> str:
+        current_plan = plan or self._build_current_plan()
+        operations = ", ".join(current_plan.operations) if current_plan.operations else "-"
+        return (
+            f"{message} | Документов: {len(self.state.documents)} | "
+            f"Выбрано: {self.state.selected_count()} | Операции: {operations} | "
+            f"Последний лог: {self.last_log_path or '-'}"
+        )
+
+    def _numbering_preview(self, settings: ToolSettings) -> str:
+        page_mode = "сквозная" if settings.page_numbering.continuous else "заново"
+        footnote_mode = "сквозная" if settings.footnotes.continuous else settings.footnotes.mode
+        return (
+            "Страницы: "
+            f"{page_mode}, {settings.page_numbering.location.lower()}, "
+            f"{settings.page_numbering.alignment.lower()}, "
+            f"формат {settings.page_numbering.format}\n"
+            f"Сноски: {footnote_mode.lower()}, формат {settings.footnotes.format}"
+        )
+
+    def _pdf_result_text(self, settings: ToolSettings) -> str:
+        folder_status = "указана" if settings.pdf.output_folder else "не указана"
+        return (
+            f"PDF исходников: {self._yes_no(settings.pdf.export_sources)}\n"
+            f"PDF итогового документа: {self._yes_no(settings.pdf.export_merged)}\n"
+            f"PDF обработанных копий: {self._yes_no(settings.pdf.export_processed_copies)}\n"
+            f"Общий PDF: {self._yes_no(settings.pdf.merge_generated_pdfs)}\n"
+            f"Папка PDF: {folder_status}"
+        )
+
+    @staticmethod
+    def _set_text(widget: tk.Text, value: str) -> None:
+        widget.config(state="normal")
+        widget.delete("1.0", "end")
+        widget.insert("end", value)
+        widget.config(state="disabled")
+
+    @staticmethod
+    def _yes_no(value: bool) -> str:
+        return "да" if value else "нет"
+
     def _add_labeled_combobox(
         self, master, label: str, row: int, column: int, values, default: str
     ):
@@ -802,6 +1109,14 @@ class MainWindow(ttk.Frame):
         combobox.set(default)
         combobox.grid(row=row, column=column + 1, sticky="ew", padx=5, pady=2)
         return combobox
+
+    @staticmethod
+    def _add_help_block(master, title: str, lines: list[str]) -> None:
+        frame = ttk.LabelFrame(master, text=title)
+        frame.pack(fill="x", padx=10, pady=10)
+        ttk.Label(frame, text="\n".join(lines), wraplength=900).pack(
+            anchor="w", padx=8, pady=6
+        )
 
     def _add_labeled_spinbox(self, master, label: str, row: int, column: int):
         ttk.Label(master, text=label).grid(row=row, column=column, sticky="w", padx=5, pady=2)
