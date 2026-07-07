@@ -24,11 +24,11 @@ class MarkerService:
             # Маркер начала (используем \r для Word)
             start_marker = f"WMT_START|{item.file_name}|{item.order_index}"
             doc.Content.InsertBefore(f"{start_marker}\r")
-            
+
             # Маркер конца
             end_marker = "WMT_END"
             doc.Content.InsertAfter(f"\r{end_marker}")
-            
+
             logging.info(f"Markers added to {item.file_name}")
 
         except Exception as e:
@@ -46,22 +46,22 @@ class MarkerService:
             find.Wrap = 1  # wdFindContinue
             find.Format = False
             find.MatchWildcards = True
-            
+
             # 1. Удаляем WMT_START|... включая перевод строки (^13)
             find.Text = "WMT_START|*^13"
             find.Replacement.Text = ""
             find.Execute(Replace=2)  # wdReplaceAll
-            
+
             # 2. Удаляем WMT_END включая перевод строки
             find.Text = "WMT_END^13"
             find.Execute(Replace=2)
-            
+
             # 3. На случай если маркеры в конце документа без ^13
             find.Text = "WMT_START|*"
             find.Execute(Replace=2)
             find.Text = "WMT_END"
             find.Execute(Replace=2)
-            
+
             logging.info("WMT markers removed from document.")
 
         except Exception as e:

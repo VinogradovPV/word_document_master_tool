@@ -30,11 +30,7 @@ class PageNumberingService:
 
             # 3. Вставка номеров страниц
             # wdAlignPageNumberLeft = 0, Center = 1, Right = 2
-            alignment_map = {
-                "По левому краю": 0,
-                "По центру": 1,
-                "По правому краю": 2
-            }
+            alignment_map = {"По левому краю": 0, "По центру": 1, "По правому краю": 2}
             alignment = alignment_map.get(self.settings.page_numbering.alignment, 1)
 
             for section in doc.Sections:

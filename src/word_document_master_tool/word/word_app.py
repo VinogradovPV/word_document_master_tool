@@ -38,8 +38,7 @@ class WordApp:
     def __enter__(self):
         if win32com is None:
             logging.warning(
-                "Word COM automation is not available "
-                "(not Windows or pywin32 not installed)."
+                "Word COM automation is not available (not Windows or pywin32 not installed)."
             )
             return self
 
@@ -48,12 +47,12 @@ class WordApp:
             # Используем DispatchEx для создания отдельного экземпляра
             self.app = win32com.client.DispatchEx("Word.Application")
             self._owns_app = True
-            
+
             self.app.Visible = self._visible
             self._old_display_alerts = self.app.DisplayAlerts
             # wdAlertsNone = 0
             self.app.DisplayAlerts = 0 if not self._display_alerts else -1
-            
+
             return self
         except Exception as e:
             logging.error(f"Failed to start Word: {e}")
@@ -69,7 +68,7 @@ class WordApp:
                         self.app.Documents.Item(1).Close(SaveChanges=WD_DO_NOT_SAVE_CHANGES)
                     except Exception:
                         break
-                
+
                 if self._old_display_alerts is not None:
                     self.app.DisplayAlerts = self._old_display_alerts
             except Exception as e:
@@ -79,7 +78,7 @@ class WordApp:
                     with contextlib.suppress(Exception):
                         self.app.Quit()
                 self.app = None
-        
+
         if pythoncom is not None:
             with contextlib.suppress(Exception):
                 pythoncom.CoUninitialize()
@@ -90,7 +89,7 @@ class WordApp:
         """
         if not self.app:
             return None
-        
+
         abs_path = os.path.abspath(file_path)
         if not os.path.exists(abs_path):
             logging.error(f"File not found: {abs_path}")
@@ -99,11 +98,11 @@ class WordApp:
         for attempt in range(retries):
             try:
                 doc = self.app.Documents.Open(
-                    FileName=abs_path, 
+                    FileName=abs_path,
                     ReadOnly=read_only,
                     AddToRecentFiles=False,
                     ConfirmConversions=False,
-                    Visible=self._visible
+                    Visible=self._visible,
                 )
                 return doc
             except Exception as e:
@@ -112,23 +111,23 @@ class WordApp:
                     time.sleep(1)
                 else:
                     logging.error(f"Failed to open document after {retries} attempts: {file_path}")
-        
+
         return None
 
     def export_as_pdf(
-        self, 
-        doc, 
-        output_path: str, 
+        self,
+        doc,
+        output_path: str,
         optimize_for_print: bool = True,
         pdf_a: bool = False,
-        include_properties: bool = True
+        include_properties: bool = True,
     ) -> bool:
         """
         Экспортирует документ в PDF.
         """
         if not doc:
             return False
-            
+
         try:
             abs_output = os.path.abspath(output_path)
             optimize = (
@@ -136,7 +135,7 @@ class WordApp:
                 if optimize_for_print
                 else WD_EXPORT_OPTIMIZE_FOR_SCREEN
             )
-            
+
             doc.ExportAsFixedFormat(
                 OutputFileName=abs_output,
                 ExportFormat=WD_EXPORT_FORMAT_PDF,
@@ -145,7 +144,7 @@ class WordApp:
                 DocStructureTags=include_properties,
                 BitmapMissingFonts=True,
                 UseISO19005_1=pdf_a,
-                CreateBookmarks=WD_EXPORT_CREATE_HEADING_BOOKMARKS
+                CreateBookmarks=WD_EXPORT_CREATE_HEADING_BOOKMARKS,
             )
             return True
         except Exception as e:

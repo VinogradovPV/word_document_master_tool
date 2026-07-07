@@ -37,5 +37,5 @@ def test_ensure_unique_file_path(tmp_path):
 
 def test_can_write_to_folder(tmp_path):
     assert can_write_to_folder(str(tmp_path)) is True
-    # На Linux сложно имитировать отсутствие прав без sudo/chmod, 
+    # На Linux сложно имитировать отсутствие прав без sudo/chmod,
     # но базовый тест на существующую папку проходит.

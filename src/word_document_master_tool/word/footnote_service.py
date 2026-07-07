@@ -23,30 +23,29 @@ class FootnoteService:
             # wdRestartContinuous = 0 (сквозная)
             # wdRestartSection = 1 (в каждом разделе)
             # wdRestartPage = 2 (на каждой странице)
-            
+
             restart_mode = 0  # По умолчанию сквозная
             if self.settings.footnotes.restart_each_section:
                 restart_mode = 1
-                
+
             # Настройка для всего документа
             doc.Footnotes.NumberingRule = restart_mode
             doc.Footnotes.StartingNumber = start_number
-            
+
             # Настройка формата (wdNoteNumberStyleArabic = 0)
             doc.Footnotes.NumberStyle = 0
-            
+
             # Обработка концевых сносок (Endnotes) если включено
             if self.settings.footnotes.process_endnotes:
                 doc.Endnotes.NumberingRule = restart_mode
                 doc.Endnotes.StartingNumber = start_number
                 # wdNoteNumberStyleLowercaseRoman = 2
                 doc.Endnotes.NumberStyle = 2
-            
+
             logging.info(
-                "Footnote numbering applied: "
-                f"start={start_number}, restart={restart_mode}"
+                f"Footnote numbering applied: start={start_number}, restart={restart_mode}"
             )
-            
+
         except Exception as e:
             logging.error(f"Failed to apply footnote numbering: {e}")
 

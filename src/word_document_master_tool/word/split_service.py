@@ -37,49 +37,49 @@ class WordSplitService:
             find.ClearFormatting()
             find.Text = "WMT_START|*|*"
             find.MatchWildcards = True
-            
+
             parts_created = 0
             while find.Execute():
                 # Текущий найденный диапазон - это маркер начала
                 start_rng = content.Duplicate
                 marker_text = start_rng.Text.strip()
-                
+
                 # Ищем соответствующий маркер конца после начала
                 end_search_rng = main_doc.Range(start_rng.End, main_doc.Content.End)
                 end_find = end_search_rng.Find
                 end_find.ClearFormatting()
                 end_find.Text = "WMT_END"
-                
+
                 if end_find.Execute():
                     end_rng = end_search_rng.Duplicate
-                    
+
                     # Создаем новый документ для части
                     new_doc = self.word.app.Documents.Add()
-                    
+
                     # Копируем содержимое между маркерами
                     data_rng = main_doc.Range(start_rng.End, end_rng.Start)
                     data_rng.Copy()
                     new_doc.Content.Paste()
-                    
+
                     # Парсим имя файла из маркера
                     # Формат: WMT_START|filename|index
                     try:
                         parts = marker_text.split("|")
-                        orig_name = parts[1] if len(parts) > 1 else f"part_{parts_created+1}"
+                        orig_name = parts[1] if len(parts) > 1 else f"part_{parts_created + 1}"
                         file_name = f"split_{orig_name}"
                     except Exception:
-                        file_name = f"split_part_{parts_created+1}.docx"
-                    
+                        file_name = f"split_part_{parts_created + 1}.docx"
+
                     if not file_name.lower().endswith(".docx"):
                         file_name += ".docx"
 
                     output_path = os.path.join(self.settings.output_folder, file_name)
                     new_doc.SaveAs2(FileName=os.path.abspath(output_path))
                     new_doc.Close(SaveChanges=0)
-                    
+
                     parts_created += 1
                     logging.info(f"Created split part: {file_name}")
-                
+
                 # Продолжаем поиск после текущего маркера начала
                 content.Start = start_rng.End
 

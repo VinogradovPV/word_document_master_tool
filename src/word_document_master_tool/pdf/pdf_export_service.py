@@ -75,7 +75,7 @@ class PdfExportService:
         Экспортирует уже обработанный (или объединенный) документ в PDF.
         """
         pdf_path = self._get_output_path(os.path.basename(file_path))
-        
+
         doc = None
         try:
             doc = word.open_document(file_path, read_only=True)
@@ -83,11 +83,11 @@ class PdfExportService:
                 return None
 
             success = word.export_as_pdf(
-                doc, 
+                doc,
                 pdf_path,
                 optimize_for_print=self.settings.pdf.optimize_for_print,
                 pdf_a=self.settings.pdf.pdf_a,
-                include_properties=self.settings.pdf.include_properties
+                include_properties=self.settings.pdf.include_properties,
             )
             return pdf_path if success else None
         finally:
